@@ -1,0 +1,54 @@
+{
+  "name": "reportkit",
+  "version": "0.1.0",
+  "description": "Write markdown with a few extra marks and get a styled report. Swappable templates, offline, GUI and CLI.",
+  "license": "MIT",
+  "author": "Brandon Knieriem",
+  "private": true,
+  "main": "electron/main.js",
+  "bin": {
+    "reportkit": "src/cli.js"
+  },
+  "scripts": {
+    "build": "node studio/build.js",
+    "start": "npm run build && electron .",
+    "cli": "node src/cli.js",
+    "test": "node scripts/test.js",
+    "dist": "npm run build && electron-builder --win",
+    "dist:portable": "npm run build && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "io.github.bknie1.reportkit",
+    "productName": "ReportKit",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "dist/studio.html",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "ReportKit-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "artifactName": "ReportKit-Setup-${version}.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.8.0",
+    "electron-builder": "^26.15.3"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "format": "reportkit-template",
+  "version": 1,
+  "name": "Default",
+  "colors": {
+    "primary": "#1e3a5f",
+    "primary2": "#2f5d8a",
+    "accent": "#e0a526",
+    "accentDeep": "#8a6410",
+    "ink": "#1c2530",
+    "muted": "#5b6774",
+    "success": "#2e9e4f",
+    "sage": "#7cc9a0",
+    "warning": "#e08a1a",
+    "danger": "#d93a46",
+    "info": "#1f64c4",
+    "grey": "#c4c9cf"
+  },
+  "font": "\"Segoe UI\",Arial,Helvetica,sans-serif",
+  "logo": {
+    "svg": "<svg viewBox=\"0 0 150 30\" role=\"img\" aria-label=\"ReportKit\"><g fill=\"currentColor\"><rect x=\"0\" y=\"12\" width=\"6\" height=\"18\" rx=\"1.5\"/><rect x=\"9\" y=\"6\" width=\"6\" height=\"24\" rx=\"1.5\"/><rect x=\"18\" y=\"0\" width=\"6\" height=\"30\" rx=\"1.5\"/></g><text x=\"32\" y=\"23\" font-family=\"Segoe UI,Arial,sans-serif\" font-size=\"21\" font-weight=\"700\" fill=\"currentColor\">ReportKit</text></svg>",
+    "height": 26,
+    "color": "#ffffff"
+  },
+  "assets": {}
+}

@@ -1,0 +1,21 @@
+  .top select{ font:inherit; font-size:12.5px; padding:5px 8px; border-radius:6px; border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.1); color:#fff; max-width:200px; }
+  .top select option{ color:#1c2530; }
+  .sheet footer{ display:flex; gap:8px; align-items:center; padding:10px 16px; border-top:1px solid var(--line); background:#fafbfd; }
+  .sheet footer .sp{ flex:1; }
+  .sheet button.ghost, .sheet footer button{ color:var(--blue); border-color:var(--line); background:#fff; }
+  .sheet button.ghost:hover{ background:#eef3f9; }
+  .sheet footer button.primary{ background:var(--gold); color:#2b2100; border-color:var(--gold); font-weight:700; }
+  .sheet .hint{ font-size:12px; color:var(--muted); margin:2px 0 6px; }
+  .sheet .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:4px 0 8px; }
+  .sheet input[type=text], .sheet input[type=number]{ font:inherit; font-size:13px; padding:5px 8px; border:1px solid var(--line); border-radius:6px; }
+  .sheet .row input[type=text]{ flex:1; min-width:220px; }
+  .sheet .swatches{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px; }
+  .sheet .swatches label{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
+  .sheet .swatches input[type=color], .sheet .logo-row input[type=color]{ width:34px; height:26px; padding:0; border:1px solid var(--line); border-radius:4px; background:#fff; }
+  .sheet .swatches code{ margin-left:auto; }
+  .sheet .logo-preview{ min-width:130px; min-height:40px; background:#1e3a5f; border-radius:6px; padding:8px 12px; display:flex; align-items:center; }
+  .sheet .logo-preview svg, .sheet .logo-preview img{ height:26px; width:auto; display:block; }
+  .sheet .asset{ display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid #eef1f5; font-size:12.5px; }
+  .sheet .asset img{ width:44px; height:32px; object-fit:contain; background:#f4f6f9; border-radius:4px; }
+  .sheet .asset code{ margin-left:auto; }
+  .sheet .body{ max-height:calc(86vh - 110px); }

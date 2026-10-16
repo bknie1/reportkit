@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReportKit Studio</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  :root{ --blue:#022851; --gold:#FFBF00; --ink:#1c2530; --muted:#5b6774; --line:#d9e0e8; --bg:#f4f6f9; }
+  html,body{ height:100%; font-family:"Segoe UI",Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  body{ display:flex; flex-direction:column; }
+  .top{ background:var(--blue); color:#fff; display:flex; align-items:center; gap:8px; padding:8px 14px; border-bottom:3px solid var(--gold); flex-wrap:wrap; }
+  .top h1{ font-size:15px; font-weight:700; margin-right:10px; letter-spacing:.02em; }
+  .top .sp{ flex:1; }
+  button, .btn{ font:inherit; font-size:12.5px; border:1px solid rgba(255,255,255,.35); background:transparent; color:#fff; padding:5px 11px; border-radius:6px; cursor:pointer; }
+  button:hover, .btn:hover{ background:rgba(255,255,255,.12); }
+  button.primary{ background:var(--gold); color:#2b2100; border-color:var(--gold); font-weight:700; }
+  button.primary:hover{ background:#ffcf33; }
+  .tools{ background:#fff; border-bottom:1px solid var(--line); padding:6px 14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .tools span{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-right:4px; }
+  .tools button{ color:var(--blue); border-color:var(--line); background:#fff; padding:3px 9px; font-size:12px; }
+  .tools button:hover{ background:#eef3f9; }
+  .main{ flex:1; display:grid; grid-template-columns:minmax(300px,1fr) minmax(300px,1.15fr); min-height:0; }
+  .pane{ min-height:0; display:flex; flex-direction:column; }
+  textarea{ flex:1; width:100%; border:0; border-right:1px solid var(--line); padding:14px 16px; font:13px/1.55 Consolas,"Cascadia Mono",monospace; resize:none; outline:none; background:#fff; color:var(--ink); tab-size:2; }
+  iframe{ flex:1; width:100%; border:0; background:#e9edf2; }
+  .status{ font-size:11.5px; color:var(--muted); padding:5px 14px; background:#fff; border-top:1px solid var(--line); display:flex; gap:14px; }
+  .status .warn{ color:#b56b00; font-weight:600; }
+  .overlay{ position:fixed; inset:0; background:rgba(2,40,81,.45); display:flex; align-items:center; justify-content:center; z-index:10; }
+  .overlay[hidden]{ display:none; }
+  .sheet{ background:#fff; border-radius:10px; width:min(760px,92vw); max-height:86vh; box-shadow:0 10px 40px rgba(0,0,0,.3); overflow:hidden; }
+  .sheet header{ background:var(--blue); color:#fff; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid var(--gold); }
+  .sheet .body{ padding:14px 18px 18px; overflow:auto; max-height:calc(86vh - 50px); font-size:13px; line-height:1.5; }
+  .sheet h3{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:14px 0 6px; }
+  .sheet table{ width:100%; border-collapse:collapse; }
+  .sheet td{ padding:5px 8px; border-bottom:1px solid #eef1f5; vertical-align:top; }
+  .sheet td:first-child{ width:46%; }
+  .sheet code{ font-family:Consolas,monospace; font-size:12px; background:#f1f4f8; padding:1px 5px; border-radius:3px; }
+  @media (max-width:780px){ .main{ grid-template-columns:1fr; grid-template-rows:1fr 1fr; } textarea{ border-right:0; border-bottom:1px solid var(--line); } }
+/*@@TPL_CSS@@*/
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>ReportKit Studio</h1>
+  <button id="open">Open .md</button>
+  <button id="saveMd">Save .md</button>
+  <button id="newDoc">New</button>
+  <button id="demo">Demo</button>
+  <span class="sp"></span>
+  <select id="tplSel" title="Template" aria-label="Template"></select>
+  <button id="tplEdit">Edit template</button>
+  <button id="tplImport">Import</button>
+  <button id="tplExport">Export</button>
+  <button id="syntax">Syntax guide</button>
+  <button id="saveHtml">Download HTML</button>
+  <button id="print" class="primary">Print / Save as PDF</button>
+</div>
+<div class="tools" id="tools"><span>Insert</span></div>
+<div class="main">
+  <div class="pane"><textarea id="src" spellcheck="false" aria-label="Markdown source"></textarea></div>
+  <div class="pane"><iframe id="view" title="Report preview"></iframe></div>
+</div>
+<div class="status"><span id="stat"></span><span id="warn" class="warn"></span><span style="margin-left:auto">Autosaved in this browser</span></div>
+<input type="file" id="file" accept=".md,.markdown,.txt" hidden>
+
+<!--@@TPL_HTML@@-->
+
+<div class="overlay" id="guide" hidden>
+  <div class="sheet" role="dialog" aria-label="Markdown+ syntax guide">
+    <header><strong>Markdown+ syntax guide</strong><button id="closeGuide">Close</button></header>
+    <div class="body" id="guideBody"></div>
+  </div>
+</div>
+
+<script>
+/*@@RENDER@@*/
+</script>
+<script>
+const MERMAID = /*@@MERMAID@@*/;
+const SAMPLE = /*@@SAMPLE@@*/;
+const DEMO = /*@@DEMO@@*/;
+const KEY = 'reportstudio.doc';
+const $ = id => document.getElementById(id);
+const src = $('src'), view = $('view');
+
+function load() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+function store(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+
+let last = '';
+function render() {
+  const r = ReportKit.document(src.value, { template: activeTpl(), mermaid: MERMAID });
+  last = r.html;
+  const y = view.contentWindow && view.contentWindow.scrollY || 0;
+  view.srcdoc = r.html;
+  view.onload = () => { try { view.contentWindow.scrollTo(0, y); } catch (e) {} };
+  $('stat').textContent = r.title + ' - ' + src.value.split(/\s+/).filter(Boolean).length + ' words';
+  $('warn').textContent = r.warnings.join('; ');
+  store(src.value);
+}
+let t; src.addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 250); });
+src.addEventListener('keydown', e => {
+  if (e.key === 'Tab') { e.preventDefault(); insert('  '); }
+});
+
+function insert(text) {
+  const s = src.selectionStart, e = src.selectionEnd;
+  src.value = src.value.slice(0, s) + text + src.value.slice(e);
+  src.selectionStart = src.selectionEnd = s + text.length;
+  src.focus(); render();
+}
+function block(text) {
+  const s = src.selectionStart, before = src.value.slice(0, s);
+  insert((before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '') + text + '\n\n');
+}
+
+const SNIPPETS = [
+  ['Hero ring', ':::hero 76% | Headline metric\nThe one-sentence takeaway\nA short paragraph of context.\n:::'],
+  ['Stat cards', ':::stats\n- 55 | Complete | 55% of total | green\n- 20 | In review | 20% of total | blue\n- 18 | In progress | 18% of total | amber\n:::'],
+  ['Stacked bar', ':::bar Items by state\n- 55 Complete {green}\n- 20 In review {sage}\n- 18 In progress {amber}\n- 7 Not started {grey}\n:::'],
+  ['Progress bars', '- [80%] Label {blue}\n- [45/60] Another label {amber}'],
+  ['Callout', '> [!warn] Watch for.\n> What the reader should not miss.'],
+  ['Table', '| Item | Progress | State |\n|---|---|---|\n| First | [60%] | [[In progress]] |\n| Second | [100%] | [[Done]] |'],
+  ['Checklist', '- [x] Done item\n- [ ] Open item'],
+  ['Definitions', ':::defs\n- Term :: What it means.\n:::'],
+  ['Panel', ':::panel Title\nBoxed secondary note.\n:::'],
+  ['Page break', '<\x21-- pagebreak -->'],
+];
+SNIPPETS.forEach(([label, text]) => {
+  const b = document.createElement('button'); b.textContent = label; b.onclick = () => block(text); $('tools').appendChild(b);
+});
+
+$('print').onclick = () => {
+  if (window.reportkitNative) { window.reportkitNative.exportPdf(last, slug()); return; }
+  view.contentWindow.focus(); view.contentWindow.print();
+};
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const slug = () => ((src.value.match(/^title:\s*(.+)$/m) || src.value.match(/^#\s+(.+)$/m) || [0, 'report'])[1]).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report';
+$('saveHtml').onclick = () => download(slug() + '.html', last, 'text/html');
+$('saveMd').onclick = () => download(slug() + '.md', src.value, 'text/markdown');
+$('open').onclick = () => $('file').click();
+$('file').onchange = e => { const f = e.target.files[0]; if (f) f.text().then(t => { src.value = t; render(); }); e.target.value = ''; };
+let armed = 0;
+$('newDoc').onclick = e => {
+  const b = e.currentTarget;
+  if (!armed) { armed = setTimeout(() => { armed = 0; b.textContent = 'New'; }, 3000); b.textContent = 'Click again to clear'; return; }
+  clearTimeout(armed); armed = 0; b.textContent = 'New';
+  src.value = '---\ntitle: New Report\nkicker: \nsubtitle: \n---\n\n## First section\n\n'; render();
+};
+
+let demoArmed = 0;
+$('demo').onclick = e => {
+  const b = e.currentTarget;
+  if (!demoArmed) { demoArmed = setTimeout(() => { demoArmed = 0; b.textContent = 'Demo'; }, 3000); b.textContent = 'Replace editor with demo?'; return; }
+  clearTimeout(demoArmed); demoArmed = 0; b.textContent = 'Demo';
+  src.value = DEMO; src.scrollTop = 0; render();
+};
+
+const GUIDE = [
+  ['Document header', [
+    ['<code>---</code> block at the top', 'Front matter: <code>title</code>, <code>kicker</code>, <code>subtitle</code>, <code>source</code>, <code>footer</code>. A first <code># Heading</code> also works as the title.'],
+  ]],
+  ['Mark something as a metric', [
+    ['<code>- [80%] Label {blue}</code>', 'Progress bar. Percent, or <code>[45/60]</code> for a count that works out the percent.'],
+    ['<code>:::stats</code> lines <code>- 55 | Label | Sub | color</code>', 'Big-number cards. Up to four across.'],
+    ['<code>:::bar Title</code> lines <code>- 55 Label {color}</code>', 'One stacked bar sized by the numbers, with a legend.'],
+    ['<code>:::hero 76% | Label</code>', 'Donut ring. First line inside is the headline, the next is the paragraph.'],
+    ['<code>[70%]</code> or <code>[45/60]</code> in a table cell', 'Small bar inside the table.'],
+  ]],
+  ['Status and emphasis', [
+    ['<code>[[Done]]</code>, <code>[[Blocked|red]]</code>', 'Pill. Common words pick their own color; add <code>|color</code> to override.'],
+    ['<code>&gt; [!good] Title</code> then <code>&gt;</code> lines', 'Callout. Types: note, good, warn, bad.'],
+    ['<code>- [x]</code> / <code>- [ ]</code>', 'Checklist.'],
+  ]],
+  ['Structure', [
+    ['<code>## Heading</code>, <code>### Subheading</code>', 'Section label with an accent tick; primary-colored subheading.'],
+    ['<code>:::defs</code> lines <code>- Term :: meaning</code>', 'Definition grid.'],
+    ['<code>:::panel Title</code> ... <code>:::</code>', 'Boxed group of anything above.'],
+    ['<code>:::columns</code> ... <code>|||</code> ... <code>:::</code>', 'Two columns split by a line holding only <code>|||</code>.'],
+    ['<code>&lt;!-- pagebreak --&gt;</code>', 'Force a new printed page.'],
+    ['<code>::::example</code> ... <code>::::</code>', 'Shows the text you wrote, then the result. A block closes on exactly as many colons as opened it, so use more colons on the outer block to nest.'],
+    ['<code>```mermaid</code> ... <code>```</code>', 'UML or flow diagram from text: class, sequence, state, flowchart. Drawn offline.'],
+    ['<code>![Caption](diagram.png)</code>', 'Image with caption. Use a PNG, SVG or data URI so the report stays self-contained.'],
+    ['<code>![Caption](asset:name)</code>', 'An image stored in the active template (Edit template, Image assets).'],
+  ]],
+  ['Colors', [
+    ['<code>blue gold green sage amber red grey</code>', 'Used in <code>{color}</code> and in the fourth column of stats lines. Blue is the template primary color and gold is its accent; edit the palette under Edit template.'],
+  ]],
+  ['Templates', [
+    ['Edit template', 'Palette, font, logo and image assets, with a live preview.'],
+    ['Import / Export', 'Templates are single files (.rktemplate.json). Export one to share it; import one to use it.'],
+  ]],
+];
+$('guideBody').innerHTML = GUIDE.map(([h, rows]) => `<h3>${h}</h3><table>${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`).join('');
+const guide = $('guide');
+$('syntax').onclick = () => { guide.hidden = !guide.hidden; };
+$('closeGuide').onclick = () => { guide.hidden = true; };
+guide.addEventListener('click', e => { if (e.target === guide) guide.hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') guide.hidden = true; });
+
+/*@@TPL_JS@@*/
+
+src.value = load() || SAMPLE;
+render();
+</script>
+</body>
+</html>

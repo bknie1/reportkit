@@ -1,0 +1,36 @@
+<div class="overlay" id="tplEditor" hidden>
+  <div class="sheet" role="dialog" aria-label="Template editor">
+    <header><strong>Template editor</strong><button id="tplCancel">Close</button></header>
+    <div class="body">
+      <p class="hint">A template is the look of a report: palette, font, logo and image assets. Changes preview live. Save it to keep it in this app, or export it as a file to share.</p>
+      <h3>Name</h3>
+      <div class="row"><input type="text" id="tplName" maxlength="60" aria-label="Template name"></div>
+      <h3>Palette</h3>
+      <div class="swatches" id="tplColors"></div>
+      <h3>Font</h3>
+      <div class="row"><input type="text" id="tplFont" aria-label="Font stack"></div>
+      <h3>Logo</h3>
+      <div class="row logo-row">
+        <div class="logo-preview" id="tplLogoPreview"></div>
+        <button class="ghost" id="tplLogoPick">Choose logo</button>
+        <button class="ghost" id="tplLogoClear">No logo</button>
+        <label>Height <input type="number" id="tplLogoH" min="12" max="80" style="width:64px"></label>
+        <label>Color <input type="color" id="tplLogoColor"></label>
+      </div>
+      <p class="hint">SVG logos take the logo color. PNG, JPEG and WebP keep their own colors.</p>
+      <h3>Image assets</h3>
+      <p class="hint">Add images, then place one in a report with <code>![Caption](asset:name)</code>.</p>
+      <div id="tplAssets"></div>
+      <div class="row"><button class="ghost" id="tplAssetAdd">Add images</button></div>
+    </div>
+    <footer>
+      <button class="ghost" id="tplReset">Reset to default</button>
+      <span class="sp"></span>
+      <button class="ghost" id="tplExportDraft">Export file</button>
+      <button class="primary" id="tplSave">Save and use</button>
+    </footer>
+  </div>
+</div>
+<input type="file" id="tplFile" accept=".json,.rktemplate,application/json" hidden>
+<input type="file" id="tplLogoFile" accept="image/*,.svg" hidden>
+<input type="file" id="tplAssetFile" accept="image/*,.svg" multiple hidden>
