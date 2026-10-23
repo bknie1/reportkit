@@ -40,6 +40,7 @@ Everything in plain markdown works. A number becomes a metric only when you mark
 | `- [x]` / `- [ ]` | Checklist |
 | `:::defs` with lines `- Term :: meaning` | Definition grid |
 | `:::panel Title`, `:::columns` split by a `\|\|\|` line | Boxed group, two columns |
+| `:::testcard 1 Title` with `Key :: value` meta lines, markdown, then `Pass: ...` and `Fail: ...` | Numbered test card ending in a green Pass box and a red Fail box |
 | `::::example` | Shows the text you wrote beside the result; add `stack` to put the result below |
 | `` ```mermaid `` | UML or flow diagram, drawn offline |
 | `![Caption](asset:name)` | An image stored in the active template |

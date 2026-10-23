@@ -124,6 +124,7 @@ const SNIPPETS = [
   ['Checklist', '- [x] Done item\n- [ ] Open item'],
   ['Definitions', ':::defs\n- Term :: What it means.\n:::'],
   ['Panel', ':::panel Title\nBoxed secondary note.\n:::'],
+  ['Test card', ':::testcard 1 Card title\nTest as :: Advisor\nBoard :: 1234\n\n**User story**\n\nAs a user, I want something, so that it helps.\n\n**Steps**\n\n1. Open the link.\n2. Press the button.\n\nPass: It does what it should.\nFail: It does not.\n:::'],
   ['Page break', '<\x21-- pagebreak -->'],
 ];
 SNIPPETS.forEach(([label, text]) => {
@@ -180,6 +181,7 @@ const GUIDE = [
     ['<code>## Heading</code>, <code>### Subheading</code>', 'Section label with an accent tick; primary-colored subheading.'],
     ['<code>:::defs</code> lines <code>- Term :: meaning</code>', 'Definition grid.'],
     ['<code>:::panel Title</code> ... <code>:::</code>', 'Boxed group of anything above.'],
+    ['<code>:::testcard 1 Title</code> ... <code>:::</code>', 'Numbered test card: <code>Key :: value</code> meta lines, markdown, then <code>Pass:</code> and <code>Fail:</code> boxes.'],
     ['<code>:::columns</code> ... <code>|||</code> ... <code>:::</code>', 'Two columns split by a line holding only <code>|||</code>.'],
     ['<code>&lt;!-- pagebreak --&gt;</code>', 'Force a new printed page.'],
     ['<code>::::example</code> ... <code>::::</code>', 'Shows the text you wrote, then the result. A block closes on exactly as many colons as opened it, so use more colons on the outer block to nest.'],
