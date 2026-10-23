@@ -10,9 +10,10 @@ footer: ReportKit - Test Cards
 
 Each card is one thing to test: who to test as, the story, what must be true, the steps, and what a pass and a fail look like.
 
-:::testcard 1 Opening a changed item returns it
-Test as :: Reviewer
+:::testcard 1 Opening a Changed Item Returns It
+What :: When a reviewer opens an item that has changed since it was submitted, it is returned to its owner and the reason is written down.
 Board :: 1234 Example item
+Test as :: Reviewer
 
 **User story**
 
@@ -23,9 +24,11 @@ As a reviewer, when I open an item that has changed since it was submitted, I wa
 - The item is returned to its owner.
 - The reason lists what changed.
 
-**Test case**
+**Test case** · card 1
 
-https://example.com/items/42
+Link: https://example.com/items/42
+
+Record: 42 | An example item
 
 1. Sign in and open the link.
 2. Press View.
@@ -35,15 +38,18 @@ Pass: The item shows as returned and the reason lists what changed.
 Fail: The item is unchanged, or the reason is missing.
 :::
 
-:::testcard 2 Refresh the panel
-Test as :: Reviewer
+:::testcard 2 Refresh the Panel
+What :: A refresh icon reloads the record in place.
 Board :: 1235 Example item
+Test as :: Reviewer
 
 **User story**
 
 As a reviewer, I want to refresh a record on demand.
 
-**Test case**
+**Test case** · card 2
+
+Link: https://example.com/records/7
 
 1. Open the record.
 2. Press the refresh icon.

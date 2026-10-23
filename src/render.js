@@ -125,22 +125,41 @@
         `<div class="ex-res"><div class="ex-label ex-get">You get</div><div class="ex-out">${renderBlocks(body, state)}</div></div></div>`;
     }
     if (kind === 'testcard') {
-      // :::testcard 1 Title, then "Key :: value" lines for the meta row, ordinary markdown for the card,
-      // and "Pass: ..." / "Fail: ..." lines that close it as a green and a red box.
+      // :::testcard 1 Title
+      //   What :: a sentence under the title        Env :: test | production (a pill and a note)
+      //   Key :: value                              any other meta shows in the meta row
+      //   Record: 143676 | what it is               a record box, placed where it is written
+      //   Pass: ... / Fail: ...                     close the card as a green and a red box
+      // Everything else is ordinary markdown.
       const m = args.match(/^(\S+)\s+(.*)$/) || [null, '', args];
-      let pass = '', fail = '';
+      let pass = '', fail = '', what = '', env = '';
       const meta = [];
-      const content = [];
+      const segs = [[]];
+      const records = [];
       body.forEach(line => {
         const pf = line.match(/^\s*(Pass|Fail)\s*:\s*(.*)$/i);
+        const rec = line.match(/^\s*Record\s*:\s*(\S+)\s*\|\s*(.*)$/i);
+        const lnk = line.match(/^\s*Link\s*:\s*(https?:\/\/\S+)\s*$/i);
+        const lab = line.match(/^\s*\*\*([^*]+)\*\*(?:\s*\u00B7\s*(.*?))?\s*$/);
         const kv = line.match(/^\s*-?\s*([A-Za-z][A-Za-z ]{0,24}?)\s*::\s*(.+)$/);
         if (pf) { if (pf[1].toLowerCase() === 'pass') pass = pf[2]; else fail = pf[2]; }
+        else if (rec) { records.push({ html: `<div class="tc-rec"><b>${inline(rec[1])}</b><span>${inline(rec[2])}</span></div>` }); segs.push([]); }
+        else if (lab) { records.push({ html: `<div class="tc-label">${inline(lab[1])}${lab[2] ? ` <span>&middot; ${inline(lab[2])}</span>` : ''}</div>` }); segs.push([]); }
+        else if (lnk) { records.push({ html: `<a class="tc-link" href="${esc(lnk[1])}">${esc(lnk[1])}</a>` }); segs.push([]); }
+        else if (kv && /^what$/i.test(kv[1].trim())) what = kv[2];
+        else if (kv && /^env$/i.test(kv[1].trim())) env = kv[2].trim().toLowerCase();
         else if (kv) meta.push(`<span><b>${inline(kv[1])}:</b> ${inline(kv[2])}</span>`);
-        else content.push(line);
+        else segs[segs.length - 1].push(line);
       });
-      return `<div class="testcard"><div class="tc-top"><span class="tc-num">${inline(m[1])}</span><span class="tc-title">${inline(m[2])}</span></div>` +
+      const envPill = env ? `<span class="tc-pill ${env === 'production' ? 'prod' : 'test'}">${env === 'production' ? 'On Production' : 'On Test'}</span>` : '';
+      const envNote = env === 'production'
+        ? 'Already live on Production. It can be seen on the Test site too, so confirm it behaves as described.'
+        : env === 'test' ? 'On the Test site only. It goes to Production once it passes here, so this is the item to test and confirm.' : '';
+      const bodyHtml = segs.map((seg, i) => renderBlocks(seg, state) + (records[i] ? records[i].html : '')).join('');
+      return `<div class="testcard"><div class="tc-top"><span class="tc-num">${inline(m[1])}</span><span class="tc-title">${inline(m[2])}${what ? `${/[.!?]$/.test(m[2]) ? '' : '.'} <span class="tc-what">${inline(what)}</span>` : ''}</span>${envPill}</div>` +
         (meta.length ? `<div class="tc-meta">${meta.join('')}</div>` : '') +
-        `<div class="tc-body">${renderBlocks(content, state)}</div>` +
+        (envNote ? `<div class="tc-env">${envNote}</div>` : '') +
+        `<div class="tc-body">${bodyHtml}</div>` +
         (pass || fail ? `<div class="tc-pf">${pass ? `<div class="tc-pass"><b>Pass</b> ${inline(pass)}</div>` : ''}${fail ? `<div class="tc-fail"><b>Fail</b> ${inline(fail)}</div>` : ''}</div>` : '') +
         '</div>';
     }
@@ -383,13 +402,18 @@ a{ color:var(--info); }
 li.meter-li{ list-style:none; padding-left:0 !important; } li.meter-li::before{ display:none; }
 .panel{ margin-top:16px; background:var(--tint-2); border:1px solid var(--line); border-radius:9px; padding:12px 15px 14px; page-break-inside:avoid; } .panel h3{ margin:0 0 4px; }
 .cols{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:6px; }
-.testcard{ margin-top:16px; border:1px solid var(--line); border-left:4px solid var(--primary); border-radius:9px; padding:12px 15px 14px; background:#fff; page-break-inside:avoid; }
-.tc-top{ display:flex; gap:10px; align-items:baseline; } .tc-num{ font-weight:800; font-size:16px; color:var(--primary); } .tc-title{ font-weight:700; font-size:13px; }
-.tc-meta{ display:flex; flex-wrap:wrap; gap:4px 18px; margin-top:6px; padding:5px 9px; background:var(--tint-2); border-radius:6px; font-size:10.5px; color:var(--muted); } .tc-meta b{ color:var(--primary); }
-.tc-body > :first-child{ margin-top:8px; } .tc-body p, .tc-body li{ font-size:11px; line-height:1.5; } .tc-body p > b:only-child{ display:block; margin-top:8px; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--primary); }
-.tc-pf{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
-.tc-pass, .tc-fail{ border-radius:7px; padding:8px 11px; font-size:11px; line-height:1.45; } .tc-pass{ background:var(--success-bg); border-left:4px solid var(--success); } .tc-fail{ background:var(--danger-bg); border-left:4px solid var(--danger); }
-.tc-pass b{ color:var(--success-ink); } .tc-fail b{ color:var(--danger-ink); } .tc-pass b, .tc-fail b{ margin-right:4px; text-transform:uppercase; font-size:10px; letter-spacing:.05em; }
+.testcard{ margin-top:16px; border:1px solid var(--line); border-left:5px solid var(--primary); border-radius:10px; padding:12px 16px 14px; background:#fff; page-break-inside:avoid; }
+.tc-top{ display:flex; gap:10px; align-items:baseline; } .tc-num{ font-weight:800; font-size:17px; color:var(--primary); flex:none; } .tc-title{ font-weight:700; font-size:13px; line-height:1.4; color:var(--ink,#1b2733); } .tc-what{ font-weight:400; }
+.tc-meta{ display:flex; flex-wrap:wrap; gap:3px 20px; margin-top:6px; font-size:10.5px; color:var(--muted); } .tc-meta b{ color:var(--ink,#1b2733); }
+.tc-env{ margin-top:6px; padding:5px 9px; background:var(--tint); border-left:3px solid var(--primary); border-radius:5px; font-size:10.5px; color:var(--primary); } .tc-pill{ margin-left:auto; flex:none; font-size:9px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:99px; background:var(--tint); color:var(--primary); } .tc-pill.prod{ background:var(--success-bg); color:var(--success-ink); }
+.tc-body p, .tc-body li{ font-size:11px; line-height:1.5; } .tc-body ul, .tc-body ol{ margin:4px 0 6px; }
+.tc-label{ margin-top:10px; font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); } .tc-label span{ text-transform:none; letter-spacing:0; font-weight:400; }
+.tc-body p > b:only-child, .tc-body p > strong:only-child{ display:block; margin-top:10px; font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); }
+.tc-link{ display:block; margin:4px 0 6px; font-family:Consolas,'Courier New',monospace; font-size:10px; color:var(--primary); text-decoration:underline; word-break:break-all; }
+.tc-rec{ margin:6px 0; padding:6px 11px; border:1px solid var(--line); border-left:3px solid var(--primary); border-radius:7px; background:#fff; display:inline-block; font-size:10.5px; } .tc-rec b{ display:block; color:var(--ink,#1b2733); font-size:11px; } .tc-rec span{ color:var(--muted); }
+.tc-pf{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+.tc-pass, .tc-fail{ border-radius:8px; padding:9px 13px; font-size:11px; line-height:1.45; } .tc-pass{ background:var(--success-bg); color:var(--success-ink); } .tc-fail{ background:var(--danger-bg); color:var(--danger-ink); }
+.tc-pass b, .tc-fail b{ display:block; margin-bottom:3px; text-transform:uppercase; font-size:9.5px; letter-spacing:.08em; }
 .callout{ margin-top:12px; border-radius:8px; padding:10px 14px; font-size:11.5px; line-height:1.5; background:var(--tint); border-left:4px solid var(--primary); page-break-inside:avoid; }
 .callout b{ color:var(--primary); }
 .callout.warn{ background:var(--warning-bg); border-left-color:var(--warning); } .callout.warn b{ color:var(--warning-ink); }
