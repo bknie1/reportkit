@@ -42,7 +42,7 @@ if (tplPath) {
 
 const md = fs.readFileSync(input, 'utf8');
 const libPath = path.join(__dirname, '..', 'vendor', 'mermaid.min.js');
-const mermaid = /^```\s*mermaid/m.test(md) && fs.existsSync(libPath) ? fs.readFileSync(libPath, 'utf8') : '';
+const mermaid = /^(```|:{3,})\s*mermaid/m.test(md) && fs.existsSync(libPath) ? fs.readFileSync(libPath, 'utf8') : '';
 const { html, warnings } = kit.document(md, { template, mermaid });
 warnings.forEach(w => console.warn('warning: ' + w));
 

@@ -42,7 +42,9 @@ Everything in plain markdown works. A number becomes a metric only when you mark
 | `:::panel Title`, `:::columns` split by a `\|\|\|` line | Boxed group, two columns |
 | `:::testcard 1 Title` with `Key :: value` meta lines, markdown, then `Pass: ...` and `Fail: ...` | Numbered test card: a title and description, a meta row, `Link:` and `Record:` lines, a `**Label** · note` heading, and closing green Pass and red Fail boxes |
 | `::::example` | Shows the text you wrote beside the result; add `stack` to put the result below |
-| `` ```mermaid `` | UML or flow diagram, drawn offline |
+| `` ```mermaid `` | UML, flow or Gantt diagram, drawn offline |
+| `::: mermaid` ... `:::` | The same diagram written the Azure DevOps wiki way, so wiki pages render as-is |
+| `[[_TOC_]]` | Contents list of the section headings (the Azure DevOps wiki tag) |
 | `![Caption](asset:name)` | An image stored in the active template |
 | `<!-- pagebreak -->` | New printed page |
 

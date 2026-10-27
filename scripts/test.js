@@ -52,4 +52,13 @@ test('only data-image assets are accepted and asset: images resolve', () => {
   assert(kit.document('![Cap](asset:missing)', { template: t }).warnings.length === 1);
 });
 
+test('azure devops ::: mermaid fence draws a diagram', () => {
+  const r = kit.convert('::: mermaid\ngantt\n    title T\n:::');
+  assert(r.mermaid && r.html.includes('class="mermaid"') && r.html.includes('gantt') && !r.warnings.length);
+});
+test('[[_TOC_]] lists the sections', () => {
+  const h = kit.convert('---\ntitle: T\n---\n[[_TOC_]]\n# One\n## Two').html;
+  assert(h.includes('class="toc"') && h.includes('href="#sec-1"') && h.includes('id="sec-2"') && !h.includes('_TOC_'));
+});
+
 console.log(n + ' passed');

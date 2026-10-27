@@ -75,7 +75,16 @@
     return m ? { text: m[1], color: color(m[2], null) } : { text: t, color: null };
   }
 
+  const TOC_MARK = '<!--reportkit-toc-->';
+
+  function diagram(body, state) {
+    state.mermaid = true;
+    return `<div class="diagram"><pre class="mermaid">${esc(body.join('\n'))}</pre></div>`;
+  }
+
   function container(kind, args, body, state) {
+    // ::: mermaid ... ::: is the Azure DevOps wiki fence; it draws the same as ```mermaid
+    if (kind === 'mermaid') return diagram(body, state);
     const rows = body.map(l => l.trim()).filter(Boolean);
     if (kind === 'stats' || kind === 'cards') {
       const cards = rows.map(stripBullet).map(r => {
@@ -182,13 +191,15 @@
       if (!line.trim()) { i++; continue; }
 
       if (/^<!--\s*pagebreak\s*-->\s*$/.test(line)) { html += '<div class="pagebreak"></div>'; i++; continue; }
+      // [[_TOC_]] is the Azure DevOps wiki contents tag; the list is filled in once every section is known
+      if (/^\s*\[\[_TOC_\]\]\s*$/.test(line)) { html += TOC_MARK; i++; continue; }
       if (/^<!--/.test(line)) { while (i < lines.length && !/-->/.test(lines[i])) i++; i++; continue; }
 
       if ((m = line.match(/^```\s*(\w*)/))) {
         const body = []; i++;
         while (i < lines.length && !/^```/.test(lines[i])) body.push(lines[i++]);
         i++;
-        if (m[1].toLowerCase() === 'mermaid') { state.mermaid = true; html += `<div class="diagram"><pre class="mermaid">${esc(body.join('\n'))}</pre></div>`; }
+        if (m[1].toLowerCase() === 'mermaid') html += diagram(body, state);
         else html += `<pre class="code">${esc(body.join('\n'))}</pre>`;
         continue;
       }
@@ -205,7 +216,11 @@
       if ((m = line.match(/^(#{1,4})\s+(.*?)\s*#*\s*$/))) {
         const lvl = m[1].length;
         if (lvl === 1 && !state.title) state.title = m[2];
-        else if (lvl <= 2) html += `<h2 class="section-title">${inline(m[2])}</h2>`;
+        else if (lvl <= 2) {
+          const id = 'sec-' + (state.sections.length + 1);
+          state.sections.push({ id, text: m[2] });
+          html += `<h2 class="section-title" id="${id}">${inline(m[2])}</h2>`;
+        }
         else if (lvl === 3) html += `<h3>${inline(m[2])}</h3>`;
         else html += `<h4>${inline(m[2])}</h4>`;
         i++; continue;
@@ -278,8 +293,12 @@
   function convert(md) {
     md = String(md).replace(/^﻿/, '').replace(/\r\n?/g, '\n');
     const { meta, body } = parseFront(md);
-    const state = { title: meta.title || '', mermaid: false, warnings: [] };
-    const html = renderBlocks(body.split('\n'), state);
+    const state = { title: meta.title || '', mermaid: false, warnings: [], sections: [] };
+    let html = renderBlocks(body.split('\n'), state);
+    if (html.includes(TOC_MARK)) {
+      const list = state.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('');
+      html = html.split(TOC_MARK).join(list ? `<nav class="toc"><ol>${list}</ol></nav>` : '');
+    }
     return { html, meta, title: state.title || 'Report', mermaid: state.mermaid, warnings: state.warnings };
   }
 
@@ -440,6 +459,7 @@ figure.fig{ margin-top:12px; page-break-inside:avoid; } figure.fig img{ display:
 figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
 .diagram{ margin-top:12px; border:1px solid var(--line); border-radius:8px; padding:8px; page-break-inside:avoid; } .diagram svg{ height:auto; max-height:5.6in; display:block; margin:0 auto; }
 .diagram pre.mermaid{ font-family:Consolas,monospace; font-size:10px; white-space:pre-wrap; }
+.toc{ margin-top:10px; font-size:11px; } .toc ol{ margin:0; padding-left:18px; } .toc a{ color:var(--accent); text-decoration:none; }
 .example{ margin-top:14px; border:1px solid var(--line); border-radius:10px; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); page-break-inside:avoid; }
 .example.stack{ grid-template-columns:minmax(0,1fr); }
 .example .ex-src{ border-right:1px solid var(--line); } .example.stack .ex-src{ border-right:0; }
