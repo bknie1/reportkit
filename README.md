@@ -30,6 +30,8 @@ Everything in plain markdown works. A number becomes a metric only when you mark
 | Write | Get |
 |---|---|
 | `---` block with `title`, `kicker`, `subtitle`, `source`, `footer` | Header band and footer line |
+| `cover: full` in the `---` block, with `tagline`, `byline`, `author`, `version`, `date` | Full-page cover in place of the header band (see `examples/cover.md`) |
+| `contents: yes` in the `---` block | Contents page after the cover, built from the section headings |
 | `- [80%] Label {blue}` or `- [45/60] Label` | Progress bar; a list of these stacks as meters |
 | `[70%]` or `[45/60]` in a table cell | Mini bar in the cell |
 | `:::stats` with lines `- 55 \| Label \| Sub \| color` | Big-number cards |

@@ -113,13 +113,20 @@
       const m = args.match(/^(\d+(?:\.\d+)?)%\s*(?:\|\s*(.*))?$/) || [null, '0', ''];
       const p = clampPct(+m[1]);
       const off = (389.6 * (1 - p / 100)).toFixed(1);
+      // Wrap the label to fit inside the ring: about 14 characters per line, at most 3 lines.
+      const lines = [];
+      for (const w of (m[2] || '').toUpperCase().split(/\s+/).filter(Boolean)) {
+        const last = lines.length - 1;
+        if (last >= 0 && (lines[last] + ' ' + w).length <= 14) lines[last] += ' ' + w; else lines.push(w);
+      }
+      lines.splice(3);
       const [head, ...rest] = rows;
       const para = rest.join(' ');
       return `<div class="hero"><div class="ring"><svg width="150" height="150" viewBox="0 0 150 150">` +
         `<circle cx="75" cy="75" r="62" fill="none" stroke="var(--track)" stroke-width="16"/>` +
         `<circle cx="75" cy="75" r="62" fill="none" stroke="var(--primary)" stroke-width="16" stroke-linecap="round" stroke-dasharray="389.6" stroke-dashoffset="${off}" transform="rotate(-90 75 75)"/>` +
-        `<text class="big" x="75" y="72" text-anchor="middle"${p >= 100 ? ' style="font-size:30px"' : ''}>${num(p)}%</text>` +
-        `<text class="lbl" x="75" y="90" text-anchor="middle">${esc((m[2] || '').toUpperCase())}</text></svg></div>` +
+        `<text class="big" x="75" y="${lines.length > 1 ? 66 : 72}" text-anchor="middle"${p >= 100 ? ' style="font-size:30px"' : ''}>${num(p)}%</text>` +
+        lines.map((l, i) => `<text class="lbl" x="75" y="${(lines.length > 1 ? 84 : 90) + i * 11}" text-anchor="middle">${esc(l)}</text>`).join('') + `</svg></div>` +
         `<div class="heroText"><h2>${inline(head || '')}</h2>${para ? `<p>${inline(para)}</p>` : ''}</div></div>`;
     }
     if (kind === 'defs') {
@@ -299,7 +306,7 @@
       const list = state.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('');
       html = html.split(TOC_MARK).join(list ? `<nav class="toc"><ol>${list}</ol></nav>` : '');
     }
-    return { html, meta, title: state.title || 'Report', mermaid: state.mermaid, warnings: state.warnings };
+    return { html, meta, title: state.title || 'Report', mermaid: state.mermaid, warnings: state.warnings, sections: state.sections };
   }
 
 
@@ -477,6 +484,25 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
 .pagebreak{ break-after:page; page-break-after:always; height:0; }
 .footer{ margin-top:26px; font-size:9.5px; color:var(--faint); border-top:1px solid var(--line); padding-top:7px; display:flex; justify-content:space-between; gap:16px; position:relative; }
 .footer::before{ content:""; position:absolute; top:-1px; left:0; width:40px; height:2px; background:var(--accent); }
+.cover{ position:relative; display:flex; flex-direction:column; min-height:9in; padding:0.9in 0.9in 0.7in; border-radius:12px; overflow:hidden;
+  background:linear-gradient(155deg,var(--primary),var(--primary-2)); color:#fff; page-break-after:always; break-after:page; }
+.cover::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:10px; background:var(--accent); }
+.cover .wordmark{ color:var(--logo-color,#fff); height:var(--logo-h,30px); } .cover .wordmark svg, .cover .wordmark img{ height:var(--logo-h,30px); width:auto; display:block; }
+.cover .cover-main{ margin-top:auto; }
+.cover .kicker{ font-size:13px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+.cover h1{ font-size:52px; line-height:1.04; font-weight:800; letter-spacing:-.015em; margin-top:14px; max-width:7in; }
+.cover .tagline{ font-size:18px; opacity:.92; margin-top:16px; max-width:6.4in; line-height:1.4; }
+.cover .rule{ width:64px; height:4px; background:var(--accent); margin:26px 0 0; border-radius:2px; }
+.cover .meta{ margin-top:22px; display:flex; gap:34px; align-items:flex-end; }
+.cover .meta .by{ font-size:16px; } .cover .meta .by b{ font-size:19px; font-weight:700; display:block; }
+.cover .meta .ver{ font-size:13px; opacity:.85; }
+.contents{ page-break-after:always; break-after:page; }
+.contents h2{ font-size:24px; color:var(--primary); font-weight:800; margin-bottom:14px; }
+.contents .toc ol{ list-style:none; counter-reset:toc; }
+.contents .toc li{ counter-increment:toc; font-size:14px; font-weight:700; padding:8px 0 7px; border-bottom:1px solid var(--line); }
+.contents .toc li::before{ content:counter(toc); display:inline-block; width:28px; color:var(--accent-deep,var(--accent)); font-weight:800; }
+.contents .toc a{ color:var(--primary); text-decoration:none; }
+@media print{ .cover-doc .cover{ width:8.5in; height:calc(11in - 2px); min-height:0; border-radius:0; margin:0; } }
 `;
 
   function document_(md, opts) {
@@ -494,16 +520,31 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
     const footer = (m.source || m.footer)
       ? `<div class="footer"><span>${m.source ? 'Source: ' + inline(m.source) : ''}</span><span>${inline(m.footer || '')}</span></div>` : '';
     const logo = !tpl.logo ? '' : `<div class="wordmark">${tpl.logo.svg || `<img src="${esc(tpl.logo.src)}" alt="">`}</div>`;
-    const band = `<header class="band">${logo}` +
-      `${m.kicker ? `<div class="kicker">${inline(m.kicker)}</div>` : ''}<h1>${esc(r.title)}</h1>` +
-      `${m.subtitle ? `<div class="sub">${inline(m.subtitle)}</div>` : ''}</header>`;
+    // cover: full gives a full-page cover (logo, kicker, title, tagline, rule, author and version) in place of the header band
+    const fullCover = /^(full|page|yes|true)$/i.test(m.cover || '');
+    const byline = m.byline || 'Prepared by';
+    const band = fullCover
+      ? `<section class="cover">${logo}<div class="cover-main">` +
+        `${m.kicker ? `<div class="kicker">${inline(m.kicker)}</div>` : ''}<h1>${esc(r.title)}</h1>` +
+        `${m.tagline || m.subtitle ? `<div class="tagline">${inline(m.tagline || m.subtitle)}</div>` : ''}<div class="rule"></div>` +
+        `${m.author || m.version || m.date ? `<div class="meta">${m.author ? `<div class="by">${esc(byline)}<b>${inline(m.author)}</b></div>` : ''}` +
+        `${m.version || m.date ? `<div class="ver">${m.version ? esc(m.version.replace(/^(?!version)/i, 'Version ')) : ''}${m.version && m.date ? ' | ' : ''}${m.date ? esc(m.date) : ''}</div>` : ''}</div>` : ''}` +
+        `</div></section>`
+      : `<header class="band">${logo}` +
+        `${m.kicker ? `<div class="kicker">${inline(m.kicker)}</div>` : ''}<h1>${esc(r.title)}</h1>` +
+        `${m.subtitle ? `<div class="sub">${inline(m.subtitle)}</div>` : ''}</header>`;
+    // contents: yes adds a contents page after the cover, built from the report's section headings
+    const wantContents = /^(yes|true|on)$/i.test(m.contents || '') && r.sections && r.sections.length;
+    const contents = wantContents
+      ? `<section class="contents"><h2>Contents</h2><nav class="toc"><ol>${r.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('')}</ol></nav></section>` : '';
+    const coverCss = fullCover ? '@page{ size:Letter; margin:0.5in; } @page :first{ margin:0; }' : '';
     const body = r.html.replace(/src="asset:([\w-]+)"/g, (all, name) => {
       if (tpl.assets[name]) return `src="${esc(tpl.assets[name])}"`;
       r.warnings.push('Image asset "' + name + '" is not in the template');
       return 'src=""';
     });
     return {
-      html: `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(r.title)}</title><style>${templateCss(tpl)}${CSS}</style>${mermaid}</head><body><div class="doc">${band}${body}${footer}</div></body></html>`,
+      html: `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(r.title)}</title><style>${templateCss(tpl)}${CSS}${coverCss}</style>${mermaid}</head><body><div class="doc${fullCover ? ' cover-doc' : ''}">${band}${contents}${body}${footer}</div></body></html>`,
       warnings: r.warnings,
       title: r.title,
     };

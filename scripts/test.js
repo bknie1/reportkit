@@ -60,5 +60,17 @@ test('[[_TOC_]] lists the sections', () => {
   const h = kit.convert('---\ntitle: T\n---\n[[_TOC_]]\n# One\n## Two').html;
   assert(h.includes('class="toc"') && h.includes('href="#sec-1"') && h.includes('id="sec-2"') && !h.includes('_TOC_'));
 });
+test('cover: full renders a full-page cover and a contents page', () => {
+  const h = kit.document('---\ntitle: T\nkicker: K\ntagline: Tag\ncover: full\ncontents: yes\nauthor: A\nversion: 2\n---\n## One\n## Two').html;
+  assert(h.includes('<section class="cover">') && !h.includes('<header class="band">') && h.includes('class="contents"') && h.includes('Version 2') && h.includes('cover-doc'));
+});
+test('hero ring label wraps to fit inside the ring', () => {
+  const h = kit.document(':::hero 97% | Of the queue resolved\nHead\n:::').html;
+  assert(h.includes('>OF THE QUEUE</text>') && h.includes('>RESOLVED</text>'));
+});
+test('without cover: full the header band stays', () => {
+  const h = kit.document('---\ntitle: T\n---\n## One').html;
+  assert(h.includes('<header class="band">') && !h.includes('<section class="cover">'));
+});
 
 console.log(n + ' passed');
