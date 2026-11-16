@@ -156,5 +156,25 @@ const plan = [
     assert(block.startsWith(':::chart gantt Round trip') && block.includes('group: Phase') && block.includes('2026-11-02'));
     assert(kit.document(block).html.includes('<figure class="chart"><svg'));
   });
+  const comp = require('../studio/components');
+  test('every insertable component renders without a warning', () => {
+    const items = comp.GROUPS.flatMap(g => g.items).filter(i => i.text);
+    assert(items.length >= 30);
+    items.forEach(i => {
+      const r = kit.document('# T\n\n## Section\n\n' + i.text, { mermaid: 'x' });
+      assert(!r.warnings.length, i.label + ': ' + r.warnings.join('; '));
+      assert(!r.html.includes('Unknown block'), i.label);
+      if (i.sel) assert(i.text.includes(i.sel), i.label + ' placeholder is not in its text');
+    });
+  });
+  test('header components add keys to the front matter and keep existing values', () => {
+    const cover = comp.GROUPS[0].items.find(i => i.label === 'Full-page cover').front;
+    let r = comp.applyFront('## Body\n', cover);
+    assert(r.changed && r.md.startsWith('---\ncover: full\n') && r.md.endsWith('---\n\n## Body\n'));
+    const r2 = comp.applyFront('---\ntitle: Mine\nauthor: Me\n---\n## Body\n', cover);
+    assert(r2.md.includes('title: Mine') && r2.md.includes('author: Me') && !r2.md.includes('Your name') && r2.md.includes('cover: full'));
+    assert(comp.applyFront(r2.md, cover).changed === false);
+    assert(kit.document(r2.md).html.includes('<section class="cover">'));
+  });
   console.log(n + ' passed');
 })().catch(e => { console.error(e); process.exit(1); });

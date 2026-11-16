@@ -1,0 +1,17 @@
+  .tools button.more{ background:#eef3f9; font-weight:600; }
+  .tools .tip{ margin-left:auto; text-transform:none; letter-spacing:0; font-size:11.5px; color:var(--muted); }
+  .tools button[draggable=true]{ cursor:grab; }
+  .ctx-panel{ background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 8px 30px rgba(2,40,81,.22); padding:5px; min-width:210px; font-size:13px; }
+  .ctx-root{ position:fixed; z-index:40; }
+  .ctx-head{ font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); padding:6px 10px 5px; font-weight:700; }
+  .ctx-sep{ height:1px; background:var(--line); margin:5px 4px; }
+  .ctx-item{ position:relative; display:flex; flex-direction:column; gap:1px; padding:6px 10px; border-radius:6px; cursor:pointer; color:var(--ink); outline:none; }
+  .ctx-item:hover, .ctx-item:focus, .ctx-item.open{ background:#eef3f9; }
+  .ctx-item .ctx-h{ font-size:11.5px; color:var(--muted); }
+  .ctx-item.has-sub > .ctx-l::after{ content:"\25B8"; float:right; color:var(--muted); margin-left:14px; }
+  .ctx-sub{ display:none; position:absolute; left:calc(100% - 2px); top:-5px; min-width:270px; z-index:41; }
+  .ctx-sub.left{ left:auto; right:calc(100% - 2px); }
+  .ctx-item.open > .ctx-sub{ display:block; }
+  .ctx-item[draggable=true]{ cursor:grab; }
+  .toast{ position:fixed; left:50%; bottom:36px; transform:translate(-50%,12px); background:var(--blue); color:#fff; padding:9px 16px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50; box-shadow:0 6px 20px rgba(0,0,0,.25); }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }

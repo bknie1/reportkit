@@ -19,6 +19,14 @@ The Studio edits the markdown on the left and shows the finished report on the r
 
 ![ReportKit Studio in Report mode: markdown on the left, the styled report on the right](docs/images/studio-report.png)
 
+### Build a report by right-clicking
+
+You do not need to know the markup. Right-click in the editor and pick a component: sections, headline numbers, stat cards, tables, callouts, charts, diagrams or a test card. It is inserted at the cursor with its placeholder text selected, so you type over it, and Ctrl+Z takes it back out. Right-click the finished report to add a component to the end. The Insert toolbar has the common ones as buttons that you can click or drag into the text, and **All components** opens the full menu. Hold Shift while right-clicking to get the browser's own menu.
+
+![The right-click menu open over the editor, with the Charts group showing](docs/images/studio-menu.png)
+
+The **Document** group fills in the header: a title block, a full-page cover, a contents page, and a source and footer line. **Charts > Chart from a spreadsheet** takes you to Chart mode, and **Add to report** brings the chart back as a block. The components live in `studio/components.js`; add an entry there and it appears in the menu.
+
 From the command line:
 
 ```bash
@@ -169,7 +177,7 @@ The build uses electron-builder. Code signing is off, so Windows SmartScreen may
 | `src/render.js` | The renderer and template rules. Pure, runs in node and the browser |
 | `src/sheet.js`, `src/charts.js` | Spreadsheet reader (.xlsx and CSV, no dependencies) and the SVG chart drawer |
 | `src/cli.js`, `src/pdf.js` | Command line and PDF through an installed browser |
-| `studio/` | Studio source; `npm run build` inlines everything into `dist/studio.html` |
+| `studio/` | Studio source (the component menu is `components.js` and `menu-ui.js`); `npm run build` inlines everything into `dist/studio.html` |
 | `electron/` | Desktop shell and native PDF export |
 | `templates/` | The default template as a file |
 | `docs/images/` | The screenshots in this file |

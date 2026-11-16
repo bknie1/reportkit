@@ -13,6 +13,9 @@ const safeJson = v => JSON.stringify(v).replace(/<(?=!--|\/?script)/gi, '\\u003c
 
 const lib = path.join(root, 'vendor/mermaid.min.js');
 const fill = {
+  '/*@@COMPONENTS@@*/': safeJs(read('studio/components.js')),
+  '/*@@MENU_CSS@@*/': read('studio/menu-ui.css'),
+  '/*@@MENU_JS@@*/': safeJs(read('studio/menu-ui.js')),
   '/*@@SHEET@@*/': safeJs(read('src/sheet.js')),
   '/*@@CHARTS@@*/': safeJs(read('src/charts.js')),
   '/*@@RENDER@@*/': safeJs(read('src/render.js')),
