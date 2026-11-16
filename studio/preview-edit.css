@@ -1,0 +1,29 @@
+  .sheet.wide{ width:min(900px,94vw); }
+  .sheet .fld{ display:block; margin:12px 0 0; }
+  .sheet .fld .fl, .sheet .fl{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:600; margin:12px 0 4px; }
+  .sheet .fld .fl{ margin-top:0; }
+  .sheet .fh{ display:block; font-size:12px; color:var(--muted); margin:3px 0 0; }
+  .sheet input[type=text], .sheet input[type=number], .sheet select, .sheet textarea{ width:100%; font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); }
+  .sheet textarea{ font-family:Consolas,"Cascadia Mono",monospace; font-size:12.5px; line-height:1.5; resize:vertical; }
+  .sheet .chk{ display:flex; gap:8px; align-items:center; font-size:13px; margin:8px 0 0; cursor:pointer; }
+  .sheet .chk input{ width:auto; margin:0; }
+  .sheet table.rows{ width:100%; border-collapse:collapse; margin-top:8px; }
+  .sheet table.rows th{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); text-align:left; padding:2px 4px; font-weight:600; }
+  .sheet table.rows td, .sheet table.rows td:first-child{ width:auto; padding:3px; border-bottom:0; vertical-align:middle; }
+  .sheet table.rows td.act{ white-space:nowrap; width:1%; }
+  .sheet .mini{ font:inherit; font-size:11.5px; padding:3px 8px; border:1px solid var(--line); background:#fff; color:var(--blue); border-radius:5px; cursor:pointer; }
+  .sheet .mini:hover{ background:#eef3f9; }
+  .sheet .mini.danger, .sheet footer button.danger{ color:#b3261e; }
+  .sheet .grid{ overflow:auto; max-height:300px; border:1px solid var(--line); border-radius:6px; margin-top:8px; }
+  .sheet .grid table{ border-collapse:collapse; width:auto; }
+  .sheet .grid td, .sheet .grid td:first-child{ width:auto; padding:0; border:1px solid #eef1f5; }
+  .sheet .grid td.ctl{ padding:3px; border:0; white-space:nowrap; }
+  .sheet .grid td input{ border:0; border-radius:0; min-width:96px; padding:5px 7px; }
+  .sheet .grid tr.head td input{ font-weight:700; background:#f4f6f9; }
+  .sheet .cprevbox{ margin-top:14px; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .sheet .two{ display:grid; gap:12px; }
+  .sheet .note{ color:var(--muted); font-size:13px; padding:14px 2px; }
+  .sheet .chartgrid{ display:grid; grid-template-columns:300px minmax(0,1fr); gap:20px; align-items:start; }
+  .sheet .chartgrid .cright{ position:sticky; top:0; }
+  .sheet .cprevbox{ margin-top:0; }
+  @media (max-width:780px){ .sheet .chartgrid{ grid-template-columns:1fr; } .sheet .chartgrid .cright{ position:static; } }

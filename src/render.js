@@ -217,11 +217,21 @@
 
   const CALLOUT = { note: 'note', info: 'note', tip: 'good', good: 'good', done: 'good', warn: 'warn', warning: 'warn', important: 'warn', caution: 'warn', bad: 'bad', danger: 'bad', error: 'bad', blocker: 'bad' };
 
-  function renderBlocks(lines, state) {
-    let html = '', i = 0, m;
+  function renderBlocks(lines, state, top) {
+    let html = '', i = 0, m, frag = null;
+    const mapped = top && state.sourceMap;
+    // closes the block that just ended: wraps what it drew with the source lines it came from
+    const closeFrag = end => {
+      if (!frag) return;
+      const piece = html.slice(frag.mark);
+      if (piece) html = html.slice(0, frag.mark) + '<rk-b data-s="' + (state.lineOffset + frag.start) + '" data-e="' + (state.lineOffset + end) + '">' + piece + '</rk-b>';
+      frag = null;
+    };
     while (i < lines.length) {
+      if (mapped) closeFrag(i);
       const line = lines[i];
       if (!line.trim()) { i++; continue; }
+      if (mapped) frag = { start: i, mark: html.length };
 
       if (/^<!--\s*pagebreak\s*-->\s*$/.test(line)) { html += '<div class="pagebreak"></div>'; i++; continue; }
       // [[_TOC_]] is the Azure DevOps wiki contents tag; the list is filled in once every section is known
@@ -312,6 +322,7 @@
       if (!para.length) { para.push(lines[i++]); }
       html += `<p class="lead">${inline(para.join(' '))}</p>`;
     }
+    if (mapped) closeFrag(i);
     return html;
   }
 
@@ -323,11 +334,11 @@
     return { meta, body: md.slice(m[0].length) };
   }
 
-  function convert(md, template) {
+  function convert(md, template, opts) {
     md = String(md).replace(/^﻿/, '').replace(/\r\n?/g, '\n');
     const { meta, body } = parseFront(md);
-    const state = { template, title: meta.title || '', mermaid: false, warnings: [], sections: [] };
-    let html = renderBlocks(body.split('\n'), state);
+    const state = { template, sourceMap: !!(opts && opts.sourceMap), lineOffset: md.slice(0, md.length - body.length).split('\n').length - 1, title: meta.title || '', mermaid: false, warnings: [], sections: [] };
+    let html = renderBlocks(body.split('\n'), state, true);
     if (html.includes(TOC_MARK)) {
       const list = state.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('');
       html = html.split(TOC_MARK).join(list ? `<nav class="toc"><ol>${list}</ol></nav>` : '');
@@ -507,6 +518,7 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
 .example pre.code{ margin:0; border-radius:0; background:#fff; padding:9px 12px; font-size:10px; }
 .example .ex-out{ padding:2px 14px 14px; }
 .example .ex-out > :first-child{ margin-top:10px; }
+rk-b{ display:contents; }
 .chart{ margin-top:14px; page-break-inside:avoid; break-inside:avoid; } .chart svg{ border:1px solid var(--line); border-radius:8px; }
 .pagebreak{ break-after:page; page-break-after:always; height:0; }
 .footer{ margin-top:26px; font-size:9.5px; color:var(--faint); border-top:1px solid var(--line); padding-top:7px; display:flex; justify-content:space-between; gap:16px; position:relative; }
@@ -535,9 +547,10 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
   function document_(md, opts) {
     opts = opts || {};
     const tpl = normalizeTemplate(opts.template || DEFAULT_TEMPLATE);
-    const r = convert(md, tpl);
+    const r = convert(md, tpl, { sourceMap: opts.sourceMap });
     const m = r.meta;
     const c = tpl.colors;
+    const hdr = opts.sourceMap ? ' data-rk="header"' : '';
     // The library is inlined so the report opens offline; "<!--" and "<script" are escaped so the HTML parser keeps the block whole.
     const mermaid = r.mermaid && opts.mermaid
       ? `<script>${opts.mermaid.replace(/<!--/g, '<\\x21--').replace(/<(\/?)script/gi, '<$1scr\\x69pt')}</script>` +
@@ -545,25 +558,25 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
       : '';
     if (r.mermaid && !opts.mermaid) r.warnings.push('Diagram library not found; diagrams show as text');
     const footer = (m.source || m.footer)
-      ? `<div class="footer"><span>${m.source ? 'Source: ' + inline(m.source) : ''}</span><span>${inline(m.footer || '')}</span></div>` : '';
+      ? `<div class="footer"${hdr}><span>${m.source ? 'Source: ' + inline(m.source) : ''}</span><span>${inline(m.footer || '')}</span></div>` : '';
     const logo = !tpl.logo ? '' : `<div class="wordmark">${tpl.logo.svg || `<img src="${esc(tpl.logo.src)}" alt="">`}</div>`;
     // cover: full gives a full-page cover (logo, kicker, title, tagline, rule, author and version) in place of the header band
     const fullCover = /^(full|page|yes|true)$/i.test(m.cover || '');
     const byline = m.byline || 'Prepared by';
     const band = fullCover
-      ? `<section class="cover">${logo}<div class="cover-main">` +
+      ? `<section class="cover"${hdr}>${logo}<div class="cover-main">` +
         `${m.kicker ? `<div class="kicker">${inline(m.kicker)}</div>` : ''}<h1>${esc(r.title)}</h1>` +
         `${m.tagline || m.subtitle ? `<div class="tagline">${inline(m.tagline || m.subtitle)}</div>` : ''}<div class="rule"></div>` +
         `${m.author || m.version || m.date ? `<div class="meta">${m.author ? `<div class="by">${esc(byline)}<b>${inline(m.author)}</b></div>` : ''}` +
         `${m.version || m.date ? `<div class="ver">${m.version ? esc(m.version.replace(/^(?!version)/i, 'Version ')) : ''}${m.version && m.date ? ' | ' : ''}${m.date ? esc(m.date) : ''}</div>` : ''}</div>` : ''}` +
         `</div></section>`
-      : `<header class="band">${logo}` +
+      : `<header class="band"${hdr}>${logo}` +
         `${m.kicker ? `<div class="kicker">${inline(m.kicker)}</div>` : ''}<h1>${esc(r.title)}</h1>` +
         `${m.subtitle ? `<div class="sub">${inline(m.subtitle)}</div>` : ''}</header>`;
     // contents: yes adds a contents page after the cover, built from the report's section headings
     const wantContents = /^(yes|true|on)$/i.test(m.contents || '') && r.sections && r.sections.length;
     const contents = wantContents
-      ? `<section class="contents"><h2>Contents</h2><nav class="toc"><ol>${r.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('')}</ol></nav></section>` : '';
+      ? `<section class="contents"${hdr}><h2>Contents</h2><nav class="toc"><ol>${r.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('')}</ol></nav></section>` : '';
     const coverCss = fullCover ? '@page{ size:Letter; margin:0.5in; } @page :first{ margin:0; }' : '';
     const body = r.html.replace(/src="asset:([\w-]+)"/g, (all, name) => {
       if (tpl.assets[name]) return `src="${esc(tpl.assets[name])}"`;

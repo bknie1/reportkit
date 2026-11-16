@@ -21,9 +21,21 @@ The Studio edits the markdown on the left and shows the finished report on the r
 
 ### Build a report by right-clicking
 
-You do not need to know the markup. Right-click in the editor and pick a component: sections, headline numbers, stat cards, tables, callouts, charts, diagrams or a test card. It is inserted at the cursor with its placeholder text selected, so you type over it, and Ctrl+Z takes it back out. Right-click the finished report to add a component to the end. The Insert toolbar has the common ones as buttons that you can click or drag into the text, and **All components** opens the full menu. Hold Shift while right-clicking to get the browser's own menu.
+You do not need to know the markup. Right-click in the editor and pick a component: sections, headline numbers, stat cards, tables, callouts, charts, diagrams or a test card. It is inserted at the cursor with its placeholder text selected, so you type over it, and Ctrl+Z takes it back out. Right-click a block in the finished report to add a component below it. The Insert toolbar has the common ones as buttons that you can click or drag into the text, and **All components** opens the full menu. Hold Shift while right-clicking to get the browser's own menu.
 
 ![The right-click menu open over the editor, with the Charts group showing](docs/images/studio-menu.png)
+
+### Edit the report itself
+
+The preview is not read-only. Hover a block in the report and a toolbar appears with **Drag**, **Up**, **Down**, **Edit**, **Copy** and **Delete**. Drag a block, or drag a button from the Insert toolbar, and a gold line shows where it will land.
+
+![Hovering a chart in the report: an outline and a toolbar with Drag, Up, Down, Edit, Copy and Delete](docs/images/studio-click-edit.png)
+
+Click any block to edit it in a form instead of in markup: the text of a heading or paragraph, the rows of stat cards, progress bars, checklists and definitions, the cells of a table, the colors and type of a callout. A chart opens with its type, columns and data grid beside a live preview. **Edit as text** shows the block's markdown for anything the form does not cover, and click the header band to edit the title, cover and footer.
+
+![The chart editor: options on the left, a live preview and the data grid on the right](docs/images/studio-edit-dialog.png)
+
+Every change is written back into the markdown, so the text on the left stays the one source of truth. Ctrl+Z in the editor or the **Undo** button on the message that appears takes a change back out.
 
 The **Document** group fills in the header: a title block, a full-page cover, a contents page, and a source and footer line. **Charts > Chart from a spreadsheet** takes you to Chart mode, and **Add to report** brings the chart back as a block. The components live in `studio/components.js`; add an entry there and it appears in the menu.
 
@@ -177,7 +189,7 @@ The build uses electron-builder. Code signing is off, so Windows SmartScreen may
 | `src/render.js` | The renderer and template rules. Pure, runs in node and the browser |
 | `src/sheet.js`, `src/charts.js` | Spreadsheet reader (.xlsx and CSV, no dependencies) and the SVG chart drawer |
 | `src/cli.js`, `src/pdf.js` | Command line and PDF through an installed browser |
-| `studio/` | Studio source (the component menu is `components.js` and `menu-ui.js`); `npm run build` inlines everything into `dist/studio.html` |
+| `studio/` | Studio source (the component menu is `components.js` and `menu-ui.js`; editing in the preview is `blocks.js` and `preview-edit.js`); `npm run build` inlines everything into `dist/studio.html` |
 | `electron/` | Desktop shell and native PDF export |
 | `templates/` | The default template as a file |
 | `docs/images/` | The screenshots in this file |

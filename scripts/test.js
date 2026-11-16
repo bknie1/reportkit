@@ -176,5 +176,47 @@ const plan = [
     assert(comp.applyFront(r2.md, cover).changed === false);
     assert(kit.document(r2.md).html.includes('<section class="cover">'));
   });
+  // ---- block editing ----
+  const bl = require('../studio/blocks');
+  const body = h => h.replace(/^[\s\S]*?<\/header>/, '');
+  test('every component reads into fields and writes back to the same report', () => {
+    comp.GROUPS.flatMap(g => g.items).filter(i => i.text).forEach(i => {
+      const model = bl.parse(i.text);
+      assert(model.type !== 'raw' || /diagram|raw|testcard|code|text/.test(model.kind || 'raw'), i.label + ' parsed as ' + model.type + ' ' + model.kind);
+      const again = bl.build(model);
+      const a = body(kit.document('# T\n\n## S\n\n' + i.text, { mermaid: 'x' }).html), b = body(kit.document('# T\n\n## S\n\n' + again, { mermaid: 'x' }).html);
+      assert.strictEqual(b, a, i.label + ' changed when written back');
+    });
+  });
+  test('the form editors know the common component types', () => {
+    const types = comp.GROUPS.flatMap(g => g.items).filter(i => i.text).map(i => bl.parse(i.text).type);
+    ['heading', 'paragraph', 'callout', 'hero', 'stats', 'bar', 'meters', 'checklist', 'table', 'defs', 'panel', 'columns', 'chart', 'pagebreak'].forEach(t => assert(types.includes(t), t + ' missing'));
+  });
+  test('moving a block rewrites only its place in the text', () => {
+    const md = 'A one\n\nB one\nB two\n\nC one\n';
+    assert.strictEqual(bl.moveBlock(md, 0, 1, 5), 'B one\nB two\n\nA one\n\nC one\n');
+    assert.strictEqual(bl.moveBlock(md, 5, 6, 0), 'C one\n\nA one\n\nB one\nB two\n');
+    assert.strictEqual(bl.moveBlock(md, 0, 1, 2), md);
+    assert.strictEqual(bl.moveBlock(md, 2, 4, 7), 'A one\n\nC one\n\nB one\nB two\n');
+    assert.strictEqual(bl.duplicateBlock(md, 2, 4), 'A one\n\nB one\nB two\n\nB one\nB two\n\nC one\n');
+    assert.strictEqual(bl.removeBlock(md, 2, 4), 'A one\n\nC one\n');
+    assert.strictEqual(bl.replaceBlock(md, 0, 1, 'New\ntext'), 'New\ntext\n\nB one\nB two\n\nC one\n');
+    assert.strictEqual(bl.insertAt(md, 2, 'X'), 'A one\n\nX\n\nB one\nB two\n\nC one\n');
+  });
+  test('a source map ties every drawn block to its lines', () => {
+    const md = '---\ntitle: T\n---\n\n## One\n\nPara a\nline b\n\n<!-- note -->\n\n:::stats\n- 1 | A\n:::\n\n- x\n- y\n';
+    const html = kit.document(md, { sourceMap: true }).html, L = md.split('\n'), got = [];
+    html.replace(/<rk-b data-s="(\d+)" data-e="(\d+)">/g, (_, s, e) => got.push(L.slice(+s, +e).join('|')));
+    assert.deepStrictEqual(got, ['## One', 'Para a|line b', ':::stats|- 1 | A|:::', '- x|- y']);
+    assert(!kit.document(md).html.includes('<rk-b') && html.includes('data-rk="header"'));
+  });
+  test('header edits set, change and remove keys', () => {
+    const md = '---\ntitle: Old\nkicker: K\n---\n\n## Body\n';
+    const out = bl.setFront(md, { title: 'New', kicker: '', author: 'Me' });
+    assert.strictEqual(out, '---\ntitle: New\nauthor: Me\n---\n\n## Body\n');
+    assert.strictEqual(bl.setFront('## Body\n', { title: 'T' }), '---\ntitle: T\n---\n\n## Body\n');
+    assert.strictEqual(bl.setFront(md, { title: '', kicker: '' }), '\n## Body\n'.replace(/^\n/, ''));
+    assert.deepStrictEqual(bl.leadHeading('# Hello\n\ntext'), { text: 'Hello', line: 0 });
+  });
   console.log(n + ' passed');
 })().catch(e => { console.error(e); process.exit(1); });

@@ -40,6 +40,7 @@
 /*@@TPL_CSS@@*/
 /*@@CHART_CSS@@*/
 /*@@MENU_CSS@@*/
+/*@@EDIT_CSS@@*/
 </style>
 </head>
 <body>
@@ -93,6 +94,9 @@
 /*@@CHARTS@@*/
 </script>
 <script>
+/*@@BLOCKS@@*/
+</script>
+<script>
 /*@@RENDER@@*/
 </script>
 <script>
@@ -106,11 +110,13 @@ const src = $('src'), view = $('view');
 function load() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
 function store(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
 
-let last = '';
+let renderedSrc = '';
+// the report as it prints or downloads: no source map, no editing marks
+function exportHtml() { return ReportKit.document(src.value, { template: activeTpl(), mermaid: MERMAID }).html; }
 function render() {
   if (document.body.dataset.mode === 'chart') { chartRender(); return; }
-  const r = ReportKit.document(src.value, { template: activeTpl(), mermaid: MERMAID });
-  last = r.html;
+  const r = ReportKit.document(src.value, { template: activeTpl(), mermaid: MERMAID, sourceMap: true });
+  renderedSrc = src.value;
   const y = view.contentWindow && view.contentWindow.scrollY || 0;
   view.srcdoc = r.html;
   view.onload = () => { try { view.contentWindow.scrollTo(0, y); } catch (e) {} };
@@ -136,7 +142,7 @@ function block(text) {
 
 
 $('print').onclick = () => {
-  if (window.reportkitNative) { window.reportkitNative.exportPdf(last, slug()); return; }
+  if (window.reportkitNative) { window.reportkitNative.exportPdf(exportHtml(), slug()); return; }
   view.contentWindow.focus(); view.contentWindow.print();
 };
 function download(name, text, type) {
@@ -145,7 +151,7 @@ function download(name, text, type) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 const slug = () => ((src.value.match(/^title:\s*(.+)$/m) || src.value.match(/^#\s+(.+)$/m) || [0, 'report'])[1]).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report';
-$('saveHtml').onclick = () => download(slug() + '.html', last, 'text/html');
+$('saveHtml').onclick = () => download(slug() + '.html', exportHtml(), 'text/html');
 $('saveMd').onclick = () => download(slug() + '.md', src.value, 'text/markdown');
 $('open').onclick = () => $('file').click();
 $('file').onchange = e => { const f = e.target.files[0]; if (f) f.text().then(t => { src.value = t; render(); }); e.target.value = ''; };
@@ -183,7 +189,9 @@ const GUIDE = [
   ]],
   ['Insert components', [
     ['Right-click the editor', 'A menu of ready-made components (sections, numbers, tables, charts, diagrams). Pick one and it is inserted at the cursor with its placeholder text selected, so you can type over it. Ctrl+Z takes it back out. Hold Shift to get the browser menu instead.'],
-    ['Right-click the report', 'The same menu, adding the component to the end of the report.'],
+    ['Right-click the report', 'The same menu, adding the component below the block you clicked.'],
+    ['Click a block in the report', 'Opens a form for that block: change the text, the rows, the colors or the chart data. Edit as text shows the markdown. Click the header band to edit the title, cover and footer.'],
+    ['Hover a block', 'A toolbar appears with Drag, Up, Down, Edit, Copy and Delete. Drag a block, or drag a button from the Insert toolbar, to a new place; the gold line shows where it will land. Ctrl+Z in the editor undoes any change.'],
     ['Insert toolbar', 'Click a button to insert, or drag it into the text. All components lists everything.'],
     ['Chart from a spreadsheet', 'In the Charts group: pick an Excel or CSV file, choose the columns, then Add to report.'],
   ]],
@@ -220,6 +228,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') guide.hidden
 /*@@TPL_JS@@*/
 /*@@CHART_JS@@*/
 /*@@MENU_JS@@*/
+/*@@EDIT_JS@@*/
 
 src.value = load() || SAMPLE;
 render();

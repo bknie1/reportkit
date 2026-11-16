@@ -2,13 +2,18 @@
 // Runs after render(), the editor helpers and Chart mode are defined.
 const Comp = ReportKitComponents;
 const chartMode = () => document.body.dataset.mode === 'chart';
-let ctxTarget = 'cursor', ctxEl = null;
+let ctxTarget = 'cursor', ctxEl = null, ctxInfo = null;
 
-function toast(msg) {
-  let t = $('toast');
-  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 3200);
+function toast(msg, undo) {
+  let box = $('toast');
+  if (!box) { box = document.createElement('div'); box.id = 'toast'; box.className = 'toast'; box.setAttribute('role', 'status'); document.body.appendChild(box); }
+  box.textContent = msg; box.classList.add('show');
+  if (undo) {
+    const u = document.createElement('button'); u.textContent = 'Undo'; u.type = 'button';
+    u.onclick = () => { src.focus(); document.execCommand('undo'); clearTimeout(t); render(); box.classList.remove('show'); };
+    box.appendChild(u);
+  }
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => box.classList.remove('show'), undo ? 6000 : 3200);
 }
 
 // Inserts a component at the cursor (or at the end of the report) and selects its placeholder text.
@@ -25,6 +30,11 @@ function put(item) {
   }
   src.focus();
   if (ctxTarget === 'end') src.setSelectionRange(src.value.length, src.value.length);
+  if (ctxTarget === 'after' && ctxInfo) {
+    if (src.value !== renderedSrc) { toast('The report is still updating. Try again in a moment.'); return; }
+    const o = Math.min(src.value.length, ReportKitBlocks.lineOffset(src.value, ctxInfo.e));
+    src.setSelectionRange(o, o);
+  }
   const s = src.selectionStart, e = src.selectionEnd, before = src.value.slice(0, s);
   let pre = '', post = '';
   if (!item.inline) { pre = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : ''; post = '\n\n'; }
@@ -64,7 +74,7 @@ function actionRow(label, fn) {
 
 function buildMenu() {
   const root = el('div', 'ctx-panel ctx-root'); root.setAttribute('role', 'menu');
-  root.appendChild(el('div', 'ctx-head', ctxTarget === 'end' ? 'Add to the end of the report' : 'Insert at the cursor'));
+  root.appendChild(el('div', 'ctx-head', ctxTarget === 'end' ? 'Add to the end of the report' : ctxTarget === 'after' ? 'Add below this block' : 'Insert at the cursor'));
   Comp.GROUPS.forEach(g => {
     const row = el('div', 'ctx-item has-sub'); row.setAttribute('role', 'menuitem'); row.setAttribute('aria-haspopup', 'true'); row.tabIndex = -1;
     row.appendChild(el('span', 'ctx-l', g.group));
@@ -98,9 +108,10 @@ function placeSub(row) {
 }
 function closeSubs(panel, except) { panel.querySelectorAll(':scope > .has-sub.open').forEach(r => { if (r !== except) r.classList.remove('open'); }); }
 
-function openMenu(x, y, target) {
+function openMenu(x, y, target, info) {
   closeMenu();
   ctxTarget = target || 'cursor';
+  ctxInfo = info || null;
   ctxEl = buildMenu();
   document.body.appendChild(ctxEl);
   const w = ctxEl.offsetWidth, h = ctxEl.offsetHeight;
@@ -152,7 +163,8 @@ view.addEventListener('load', () => {
       if (chartMode() || e.shiftKey) return;
       e.preventDefault();
       const r = view.getBoundingClientRect();
-      openMenu(r.left + e.clientX, r.top + e.clientY, 'end');
+      const bi = typeof blockInfoFor === 'function' ? blockInfoFor(e.target) : null;
+      openMenu(r.left + e.clientX, r.top + e.clientY, bi ? 'after' : 'end', bi);
     });
     d.addEventListener('mousedown', closeMenu);
   } catch (err) { /* a viewer that blocks access to the preview keeps the editor menu only */ }
@@ -174,7 +186,7 @@ view.addEventListener('load', () => {
   more.onclick = () => { const r = more.getBoundingClientRect(); openMenu(r.left, r.bottom + 4, 'cursor'); };
   bar.appendChild(more);
   const tip = document.createElement('span');
-  tip.className = 'tip'; tip.textContent = 'Right-click the editor or the report to add components';
+  tip.className = 'tip'; tip.textContent = 'Right-click to add. Click a block to edit. Drag to reorder.';
   bar.appendChild(tip);
 })();
 // A drop into the editor lands where the pointer is; the browser inserts the dragged text and fires input.

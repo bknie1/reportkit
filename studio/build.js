@@ -15,6 +15,9 @@ const lib = path.join(root, 'vendor/mermaid.min.js');
 const fill = {
   '/*@@COMPONENTS@@*/': safeJs(read('studio/components.js')),
   '/*@@MENU_CSS@@*/': read('studio/menu-ui.css'),
+  '/*@@BLOCKS@@*/': safeJs(read('studio/blocks.js')),
+  '/*@@EDIT_CSS@@*/': read('studio/preview-edit.css'),
+  '/*@@EDIT_JS@@*/': safeJs(read('studio/preview-edit.js')),
   '/*@@MENU_JS@@*/': safeJs(read('studio/menu-ui.js')),
   '/*@@SHEET@@*/': safeJs(read('src/sheet.js')),
   '/*@@CHARTS@@*/': safeJs(read('src/charts.js')),
