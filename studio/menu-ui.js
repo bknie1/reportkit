@@ -177,7 +177,7 @@ view.addEventListener('load', () => {
     const b = document.createElement('button');
     b.textContent = item.label; b.title = item.hint + '. Click to insert, or drag into the text.';
     b.onclick = () => { ctxTarget = 'cursor'; put(item); };
-    b.draggable = true;
+    b.draggable = true; b._text = item.text;
     b.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', '\n\n' + item.text + '\n\n'); e.dataTransfer.effectAllowed = 'copy'; });
     bar.appendChild(b);
   }));

@@ -31,7 +31,13 @@ The preview is not read-only. Hover a block in the report and a toolbar appears 
 
 ![Hovering a chart in the report: an outline and a toolbar with Drag, Up, Down, Edit, Copy and Delete](docs/images/studio-click-edit.png)
 
-Click any block to edit it in a form instead of in markup: the text of a heading or paragraph, the rows of stat cards, progress bars, checklists and definitions, the cells of a table, the colors and type of a callout. A chart opens with its type, columns and data grid beside a live preview. **Edit as text** shows the block's markdown for anything the form does not cover, and click the header band to edit the title, cover and footer.
+**Click text to edit it where it is.** Headings, paragraphs, quotes, list items, table cells, stat card numbers and labels, callout titles and text, definitions, progress bar labels and the headline beside a ring all turn into an editable field in place. The field shows the text's markdown, so **bold** and [[Status]] marks stay editable. Press Enter to save (Ctrl+Enter in a paragraph), Escape to cancel, or click away to save.
+
+![Editing a paragraph in place: the text is outlined and shows its markdown](docs/images/studio-inline.png)
+
+For everything else, and whenever you want the whole block at once, press **Edit** on the toolbar or click a chart, ring or other part that is not plain text. That opens a form: the rows of stat cards, progress bars, checklists and definitions, the cells of a table, the colors and type of a callout. A chart opens with its type, columns and data grid beside a live preview. **Edit as text** shows the block's markdown for anything the form does not cover, and clicking the header band edits the title, cover and footer.
+
+**On a touchscreen**, tap a block once to select it and show the toolbar, tap it again to edit, and hold the **Drag** button to move it. Buttons from the Insert toolbar can be dragged into the report with a finger too.
 
 ![The chart editor: options on the left, a live preview and the data grid on the right](docs/images/studio-edit-dialog.png)
 

@@ -2,7 +2,7 @@
 // drop a component from the toolbar between blocks. Every change is written back into the markdown.
 // Runs after the editor, the component menu and the block logic are defined.
 const Blocks = ReportKitBlocks;
-let rkDoc = null, rk = null, rkHover = null, rkDrag = null, ed = null, dlgEl = null;
+let rkDoc = null, rk = null, rkHover = null, rkDrag = null, ed = null, dlgEl = null, rkInline = null, rkCommitAt = 0;
 
 const EL = (tag, cls, txt) => { const x = document.createElement(tag); if (cls) x.className = cls; if (txt != null) x.textContent = txt; return x; };
 const totalLines = () => src.value.split('\n').length;
@@ -50,6 +50,9 @@ rk-b{ cursor:pointer; } [data-rk]{ cursor:pointer; }
 .rk-bar button.del:hover{ background:#d93a46; }
 .rk-line{ position:absolute; display:none; height:4px; background:#FFBF00; border-radius:2px; box-shadow:0 0 0 3px rgba(255,191,0,.3); pointer-events:none; }
 html.rk-drag, html.rk-drag *{ cursor:grabbing !important; user-select:none !important; }
+.rk-bar button.grip{ touch-action:none; }
+@media (pointer:coarse){ .rk-bar{ gap:4px; } .rk-bar button{ padding:11px 14px; font-size:14px; } }
+[contenteditable]{ caret-color:#022851; }
 @media print{ .rk-ui{ display:none !important; } }`;
 
 function attachPreview() {
@@ -68,24 +71,42 @@ function attachPreview() {
   ui.append(box, line, bar); d.body.appendChild(ui);
   rk = { ui, box, line, bar };
 
+  // mouse: hover shows the toolbar. touch: a first tap selects a block, a second tap edits it.
   d.addEventListener('mousemove', e => {
-    if (rkDrag) { dragMove(e); return; }
-    if (e.target.closest('.rk-ui')) return;
+    if (rkDrag || rkInline || e.target.closest('.rk-ui')) return;
     hover(e.target.closest('rk-b') || e.target.closest('[data-rk]'));
   });
-  d.documentElement.addEventListener('mouseleave', () => { if (!rkDrag) hover(null); });
-  d.addEventListener('mousedown', e => { closeMenu(); if (e.target.closest('.rk-bar .grip')) { e.preventDefault(); if (rkHover && !rkHover.hasAttribute('data-rk')) startDrag(rkHover); } });
-  d.addEventListener('mouseup', () => { if (rkDrag) endDrag(true); });
+  d.documentElement.addEventListener('mouseleave', () => { if (!rkDrag && !rkInline) hover(null); });
+  d.addEventListener('mousedown', () => closeMenu());
+  // dragging uses pointer events so the same code serves a mouse, a finger and a pen
+  d.addEventListener('pointerdown', e => {
+    const grip = e.target.closest('.rk-bar .grip');
+    if (!grip) return;
+    e.preventDefault();
+    if (!rkHover || rkHover.hasAttribute('data-rk')) return;
+    try { grip.setPointerCapture(e.pointerId); } catch (err) { /* no active pointer, as in a synthetic event */ }
+    startDrag(rkHover);
+  });
+  d.addEventListener('pointermove', e => { if (rkDrag) { e.preventDefault(); dragMove(e); } });
+  d.addEventListener('pointerup', () => { if (rkDrag) endDrag(true); });
+  d.addEventListener('pointercancel', () => { if (rkDrag) endDrag(false); });
   d.addEventListener('keydown', e => { if (e.key === 'Escape' && rkDrag) endDrag(false); });
   d.addEventListener('click', e => {
+    if (rkInline && rkInline.ed.contains(e.target)) return;
     const btn = e.target.closest('.rk-bar button');
     if (btn) { e.preventDefault(); barAction(btn.dataset.act); return; }
     if (e.target.closest('.rk-ui')) return;
     e.preventDefault();
-    const hdr = e.target.closest('[data-rk]');
+    if (Date.now() - rkCommitAt < 400) return;
+    const touch = e.pointerType === 'touch' || e.pointerType === 'pen';
+    const hdr = e.target.closest('[data-rk]'), bi = hdr ? null : blockInfoFor(e.target);
+    if (touch) {
+      const el = hdr || (bi && bi.el);
+      if (!el) { hover(null); return; }
+      if (rkHover !== el) { hover(el); return; }
+    }
     if (hdr) { openHeaderEditor(); return; }
-    const bi = blockInfoFor(e.target);
-    if (bi) openBlockEditor(bi);
+    if (bi) { const tg = inlineTarget(e.target, bi); if (tg) startInline(tg); else openBlockEditor(bi); }
   });
   // a component dragged from the Insert toolbar or the menu lands between blocks
   d.addEventListener('dragover', e => {
@@ -118,7 +139,7 @@ function hover(el) {
   const isHdr = el.hasAttribute('data-rk');
   Object.assign(rk.box.style, { display: 'block', left: q.left - 6 + 'px', top: q.top - 6 + 'px', width: q.width + 12 + 'px', height: q.height + 12 + 'px' });
   [...rk.bar.children].forEach(b => { b.style.display = isHdr && b.dataset.act !== 'edit' ? 'none' : ''; });
-  rk.bar.style.display = 'flex';
+  rk.bar.style.display = 'flex'; rk.bar.style.visibility = '';
   rk.bar.style.left = Math.max(4, q.right + 6 - rk.bar.offsetWidth) + 'px';
   rk.bar.style.top = Math.max(2, q.top - 6 - rk.bar.offsetHeight - 3) + 'px';
 }
@@ -154,7 +175,7 @@ function startDrag(el) {
   }, 30) };
   rkDoc.documentElement.classList.add('rk-drag');
   [...el.children].forEach(c => { c.style.opacity = '0.4'; });
-  rk.box.style.display = 'none'; rk.bar.style.display = 'none';
+  rk.box.style.display = 'none'; rk.bar.style.visibility = 'hidden';
 }
 function dragMove(e) {
   rkDrag.y = e.clientY;
@@ -172,7 +193,8 @@ function endDrag(apply) {
   const bi = infoOf(dr.el), at = dr.slot.before ? +dr.slot.before.dataset.s : totalLines();
   commit(Blocks.moveBlock(src.value, bi.s, bi.e, at), 'Block moved.');
 }
-document.addEventListener('mouseup', () => { if (rkDrag) endDrag(true); });
+document.addEventListener('pointerup', () => { if (rkDrag) endDrag(true); });
+document.addEventListener('pointercancel', () => { if (rkDrag) endDrag(false); });
 
 // ---- form helpers ----
 function uiFld(label, control, hint) { const w = EL('label', 'fld'); w.appendChild(EL('span', 'fl', label)); w.appendChild(control); if (hint) w.appendChild(EL('span', 'fh', hint)); return w; }
@@ -406,3 +428,158 @@ function saveEditor() {
   dlgEl.hidden = true; ed = null;
   commit(Blocks.replaceBlock(src.value, cur.s, cur.e, text), 'Saved.', cur.s);
 }
+
+// ---- inline editing: the clicked text becomes editable in place, showing its markdown ----
+// Maps the clicked element to one field of its block, or null when that part needs the form.
+function inlineTarget(t, bi) {
+  const text = src.value.split('\n').slice(bi.s, bi.e).join('\n');
+  const m = Blocks.parse(text);
+  const up = sel => { const x = t.closest(sel); return x && bi.el.contains(x) ? x : null; };
+  const plain = (node, raw, set, multi, empty) => ({ m, node, raw, set, multi: !!multi, empty: !!empty, bi });
+  const after = (box, bold, raw, set, sep) => ({ m, node: box, bold, after: true, sep, raw, set, multi: true, empty: true, bi });
+  const at = (list, el) => [...list].indexOf(el);
+  let x;
+  switch (m.type) {
+    case 'heading': return (x = up('h2,h3,h4')) ? plain(x, m.text, v => { m.text = v; }) : null;
+    case 'paragraph': return (x = up('p.lead')) ? plain(x, m.text, v => { m.text = v; }, true) : null;
+    case 'quote': return (x = up('blockquote')) ? plain(x, m.body, v => { m.body = v; }, true) : null;
+    case 'image': return (x = up('figcaption')) ? plain(x, m.alt, v => { m.alt = v; }, false, true) : null;
+    case 'callout': {
+      if (!(x = up('.callout'))) return null;
+      const b = x.querySelector(':scope > b');
+      if (b && b.contains(t)) return plain(b, m.title, v => { m.title = v; });
+      return after(x, b, m.body, v => { m.body = v; }, ' ');
+    }
+    case 'bullets': case 'steps': case 'checklist': {
+      if (!(x = up('li'))) return null;
+      const lis = bi.el.querySelectorAll(':scope > ul > li, :scope > ol > li'), i = at(lis, x);
+      return i >= 0 && lis.length === m.rows.length ? plain(x, m.rows[i].text, v => { m.rows[i].text = v; }) : null;
+    }
+    case 'meters': {
+      if (!(x = up('.meter'))) return null;
+      const all = bi.el.querySelectorAll('.meter'), i = at(all, x), span = x.querySelector('.m-top span');
+      return i >= 0 && all.length === m.rows.length && span ? plain(span, m.rows[i].label, v => { m.rows[i].label = v; }) : null;
+    }
+    case 'table': {
+      if (!(x = up('th,td'))) return null;
+      const r = [...bi.el.querySelectorAll('tr')].indexOf(x.parentElement), c = x.cellIndex;
+      return r >= 0 && m.rows[r] && m.rows[r][c] != null ? plain(x, m.rows[r][c], v => { m.rows[r][c] = v; }, false, true) : null;
+    }
+    case 'stats': {
+      const card = up('.card');
+      if (!card) return null;
+      const all = bi.el.querySelectorAll('.card'), i = at(all, card);
+      const part = ['n', 't', 'p'].find(k => { const p = t.closest('.' + k); return p && card.contains(p); });
+      return part && i >= 0 && all.length === m.rows.length ? plain(card.querySelector('.' + part), m.rows[i][part], v => { m.rows[i][part] = v; }, false, part === 'p') : null;
+    }
+    case 'defs': {
+      const def = up('.def');
+      if (!def) return null;
+      const all = bi.el.querySelectorAll('.def'), i = at(all, def);
+      if (i < 0 || all.length !== m.rows.length) return null;
+      const b = def.querySelector(':scope > b');
+      if (b && b.contains(t)) return plain(b, m.rows[i].term, v => { m.rows[i].term = v; });
+      return after(def, b, m.rows[i].text, v => { m.rows[i].text = v; }, ' \u2013 ');
+    }
+    case 'hero':
+      if ((x = up('.heroText h2'))) return plain(x, m.headline, v => { m.headline = v; });
+      if ((x = up('.heroText p'))) return plain(x, m.paragraph, v => { m.paragraph = v; }, true, true);
+      return null;
+    case 'panel': return (x = up('.panel > h3')) ? plain(x, m.title, v => { m.title = v; }, false, true) : null;
+    case 'bar': return (x = up('.bar-title')) ? plain(x, m.title, v => { m.title = v; }, false, true) : null;
+    default: return null;
+  }
+}
+
+function startInline(tg) {
+  if (stale()) return;
+  const d = rkDoc;
+  tg.saved = tg.node.innerHTML; tg.style = tg.node.getAttribute('style');
+  let el = tg.node;
+  if (tg.after) {
+    // the bold title stays as drawn; everything after it becomes the editable text
+    let n = tg.bold ? tg.bold.nextSibling : tg.node.firstChild;
+    while (n) { const nx = n.nextSibling; n.remove(); n = nx; }
+    if (tg.sep) tg.node.appendChild(d.createTextNode(tg.sep));
+    el = d.createElement('span'); tg.node.appendChild(el);
+  }
+  tg.ed = el;
+  el.textContent = tg.raw;
+  try { el.contentEditable = 'plaintext-only'; } catch (err) { el.contentEditable = 'true'; }
+  Object.assign(el.style, { whiteSpace: 'pre-wrap', outline: '2px solid #FFBF00', outlineOffset: '3px', background: 'rgba(255,191,0,.14)', color: '#1c2530', borderRadius: '3px', cursor: 'text', minWidth: '2em' });
+  rkInline = tg;
+  hover(null);
+  el.focus();
+  const r = d.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const sl = d.defaultView.getSelection(); sl.removeAllRanges(); sl.addRange(r);
+  el.addEventListener('keydown', ke => {
+    if (ke.key === 'Escape') { ke.preventDefault(); cancelInline(); }
+    else if ((ke.key === 'Enter' && (!tg.multi || ke.ctrlKey || ke.metaKey)) || ke.key === 'Tab') { ke.preventDefault(); commitInline(); }
+  });
+  el.addEventListener('blur', () => { if (rkInline === tg) commitInline(); });
+  el.addEventListener('paste', pe => { pe.preventDefault(); d.execCommand('insertText', false, (pe.clipboardData || window.clipboardData).getData('text/plain')); });
+}
+function cancelInline() {
+  const tg = rkInline;
+  if (!tg) return;
+  rkInline = null;
+  restoreNode(tg);
+}
+// puts the block back as it was drawn, including the editable marks added for the edit
+function restoreNode(tg) {
+  tg.node.innerHTML = tg.saved;
+  if (tg.after) return;
+  tg.node.removeAttribute('contenteditable');
+  if (tg.style == null) tg.node.removeAttribute('style'); else tg.node.setAttribute('style', tg.style);
+}
+function commitInline() {
+  const tg = rkInline;
+  if (!tg) return;
+  rkInline = null;
+  let v = tg.ed.textContent.replace(/\r/g, '').replace(/\n+$/, '');
+  v = tg.multi ? v : v.replace(/\s*\n\s*/g, ' ').trim();
+  if (v === tg.raw || (v === '' && !tg.empty) || stale()) { restoreNode(tg); return; }
+  rkCommitAt = Date.now();
+  tg.set(v);
+  commit(Blocks.replaceBlock(src.value, tg.bi.s, tg.bi.e, Blocks.build(tg.m)), 'Saved.', tg.bi.s);
+}
+
+// ---- touch: drag a button from the Insert toolbar into the report ----
+// A mouse uses the browser's own drag and drop; a finger or pen is followed here.
+let tdrag = null;
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' || !e.target.closest) return;
+  const b = e.target.closest('#tools button');
+  if (b && b._text) tdrag = { b, x: e.clientX, y: e.clientY, id: e.pointerId, on: false, ghost: null, slot: null };
+});
+document.addEventListener('pointermove', e => {
+  if (!tdrag || e.pointerId !== tdrag.id || !rkDoc) return;
+  if (!tdrag.on) {
+    if (Math.hypot(e.clientX - tdrag.x, e.clientY - tdrag.y) < 10) return;
+    tdrag.on = true;
+    const g = EL('div', 'drag-ghost', tdrag.b.textContent);
+    g.style.cssText = 'position:fixed;z-index:60;pointer-events:none;background:#022851;color:#fff;border-radius:7px;padding:8px 14px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.35)';
+    document.body.appendChild(g); tdrag.ghost = g;
+  }
+  e.preventDefault();
+  tdrag.ghost.style.left = e.clientX + 12 + 'px'; tdrag.ghost.style.top = e.clientY - 36 + 'px';
+  const r = view.getBoundingClientRect();
+  if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+    tdrag.slot = slotAt(e.clientY - r.top + rkDoc.defaultView.scrollY);
+    showSlot(tdrag.slot);
+  } else { tdrag.slot = null; hideSlot(); }
+});
+function endToolbarDrag(apply) {
+  const td = tdrag;
+  tdrag = null;
+  if (!td || !td.on) return;
+  td.ghost.remove(); hideSlot();
+  rkCommitAt = Date.now();
+  if (!apply || !td.slot || stale()) return;
+  const at = td.slot.before ? +td.slot.before.dataset.s : totalLines();
+  commit(Blocks.insertAt(src.value, at, td.b._text), 'Component added.', at);
+}
+document.addEventListener('pointerup', () => endToolbarDrag(true));
+document.addEventListener('pointercancel', () => endToolbarDrag(false));
+// a drag that ended on the button must not also insert at the cursor
+document.addEventListener('click', e => { if (Date.now() - rkCommitAt < 400 && e.target.closest && e.target.closest('#tools button')) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
