@@ -1,6 +1,6 @@
 # ReportKit
 
-Write a report as plain markdown with a few extra marks and get a finished, styled report: a header band, progress bars, stat cards, status pills, callouts, tables and UML diagrams. It runs offline as a desktop app, a single HTML file, or a command line tool, and the whole look (palette, font, logo, images) comes from a template file you can swap, import and export.
+Drop in a spreadsheet and get a chart or a Gantt chart in your template colors, or write a report as plain markdown with a few extra marks and get a finished, styled report: a header band, progress bars, stat cards, status pills, callouts, tables and UML diagrams. It runs offline as a desktop app, a single HTML file, or a command line tool, and the whole look (palette, font, logo, images) comes from a template file you can swap, import and export.
 
 ## Quick start
 
@@ -20,6 +20,28 @@ node src/cli.js report.md report.pdf
 node src/cli.js report.md report.html --template my-brand.rktemplate.json
 node src/cli.js --export-template my-brand.rktemplate.json
 ```
+
+## Charts from a spreadsheet
+
+Press **Chart** in the Studio, drop in an `.xlsx`, `.csv` or `.tsv` file, and pick the columns. The file is read on your computer; nothing is uploaded. The chart is drawn in the active template's colors, so a template change restyles it.
+
+| Chart | Columns you pick |
+|---|---|
+| Gantt chart | Task, start date, end date (or duration in days), and optionally a group (sets the color) and a progress column. A task with no end date is a milestone |
+| Column chart, stacked columns, line, area | Categories or dates, and one or more number columns |
+| Ranked bars | Names and one or more number columns, largest first |
+| Share of total | Names and one number column; more than six parts fold into Other |
+
+The Studio guesses the columns from their names and contents (dates, numbers, words like Start, End, Phase, Progress), so most sheets draw correctly on the first try. If the header is not on the first row, set **Header row**. Export with **Save SVG**, **Save PNG**, **Copy image** (paste into a slide or document) or **Save as PDF**, or press **Add to report** to place the chart in a report as a `:::chart` block that carries its own data.
+
+From the command line:
+
+```bash
+node src/cli.js chart plan.xlsx plan.svg --task Task --start Start --end End --group Phase --title "Project plan"
+node src/cli.js chart counts.xlsx counts.pdf --type bar --x Term --y "Applied,Enrolled"
+```
+
+Dates read as 2026-03-14, 3/14/2026, 14 Mar 2026 or Mar 14, 2026, or as dates in Excel. Older `.xls` and password-protected workbooks are not supported; save as `.xlsx` or CSV.
 
 PDF output needs Chrome, Edge or Chromium installed (set `REPORTKIT_BROWSER` to its path if it is not found). The desktop app prints PDFs itself.
 
@@ -44,6 +66,7 @@ Everything in plain markdown works. A number becomes a metric only when you mark
 | `:::panel Title`, `:::columns` split by a `\|\|\|` line | Boxed group, two columns |
 | `:::testcard 1 Title` with `Key :: value` meta lines, markdown, then `Pass: ...` and `Fail: ...` | Numbered test card: a title and description, a meta row, `Link:` and `Record:` lines, a `**Label** · note` heading, and closing green Pass and red Fail boxes |
 | `::::example` | Shows the text you wrote beside the result; add `stack` to put the result below |
+| `:::chart gantt Title` with option lines (`task: Task`, `start: Start`, `end: End`, `group: Phase`) then the data as CSV | A chart drawn from the data in the block; types are gantt, bar, hbar, stacked, line, area, share |
 | `` ```mermaid `` | UML, flow or Gantt diagram, drawn offline |
 | `::: mermaid` ... `:::` | The same diagram written the Azure DevOps wiki way, so wiki pages render as-is |
 | `[[_TOC_]]` | Contents list of the section headings (the Azure DevOps wiki tag) |
@@ -96,11 +119,12 @@ The build uses electron-builder. Code signing is off, so Windows SmartScreen may
 | Path | What it is |
 |---|---|
 | `src/render.js` | The renderer and template rules. Pure, runs in node and the browser |
+| `src/sheet.js`, `src/charts.js` | Spreadsheet reader (.xlsx and CSV, no dependencies) and the SVG chart drawer |
 | `src/cli.js`, `src/pdf.js` | Command line and PDF through an installed browser |
 | `studio/` | Studio source; `npm run build` inlines everything into `dist/studio.html` |
 | `electron/` | Desktop shell and native PDF export |
 | `templates/` | The default template as a file |
-| `examples/` | `demo.md` and `sample.md` |
+| `examples/` | `demo.md`, `sample.md`, and sample spreadsheets (`project-plan.xlsx`, `enrollment.xlsx`) |
 | `vendor/` | Bundled Mermaid, see `NOTICE.md` |
 
 Run the tests with `npm test`.

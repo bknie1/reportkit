@@ -6,6 +6,10 @@
   else root.ReportKit = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
 
+  // The spreadsheet reader and chart drawer are separate modules: required in node, globals in the Studio.
+  const dep = (name, global) => (typeof module === 'object' && module.exports ? require(name) : (typeof self !== 'undefined' ? self : this)[global]);
+  const Sheet = dep('./sheet', 'ReportKitSheet'), Charts = dep('./charts', 'ReportKitCharts');
+
   const COLORS = ['blue', 'gold', 'green', 'sage', 'amber', 'red', 'grey'];
   const ALIAS = { yellow: 'gold', orange: 'amber', gray: 'grey', quad: 'green', info: 'blue', good: 'green', warn: 'amber', bad: 'red' };
   const color = (c, dflt) => { c = (c || '').toLowerCase(); c = ALIAS[c] || c; return COLORS.includes(c) ? c : dflt; };
@@ -80,6 +84,27 @@
   function diagram(body, state) {
     state.mermaid = true;
     return `<div class="diagram"><pre class="mermaid">${esc(body.join('\n'))}</pre></div>`;
+  }
+
+  // :::chart gantt Title, then option lines (task: Name, start: Start, ...), then the data as CSV
+  function chartBlock(args, body, state) {
+    const warn = msg => { state.warnings.push(msg); return '<div class="callout warn"><b>Chart.</b> ' + esc(msg) + '</div>'; };
+    const options = {};
+    let i = 0;
+    for (; i < body.length; i++) {
+      if (!body[i].trim()) continue;
+      const o = body[i].match(/^\s*([a-z]+)\s*:\s*(.*?)\s*$/i);
+      if (o && Charts.OPTION_KEYS.includes(o[1].toLowerCase())) options[o[1].toLowerCase()] = o[2]; else break;
+    }
+    const table = Sheet.toTable(Sheet.parseCsv(body.slice(i).join('\n')));
+    if (!table.columns.length) return warn('The chart block has no data rows.');
+    const { spec, problems } = Charts.fromBlock(table, args, options);
+    problems.forEach(p => state.warnings.push(p));
+    try {
+      const r = Charts.render(table, spec, Charts.paletteFromTemplate(state.template || DEFAULT_TEMPLATE), { responsive: true });
+      r.warnings.forEach(w => state.warnings.push(w));
+      return '<figure class="chart">' + r.svg + '</figure>';
+    } catch (e) { return warn(e.message); }
   }
 
   function container(kind, args, body, state) {
@@ -179,6 +204,7 @@
         (pass || fail ? `<div class="tc-pf">${pass ? `<div class="tc-pass"><b>Pass</b> ${inline(pass)}</div>` : ''}${fail ? `<div class="tc-fail"><b>Fail</b> ${inline(fail)}</div>` : ''}</div>` : '') +
         '</div>';
     }
+    if (kind === 'chart') return chartBlock(args, body, state);
     if (kind === 'panel') {
       return `<div class="panel">${args ? `<h3>${inline(args)}</h3>` : ''}${renderBlocks(body, state)}</div>`;
     }
@@ -297,10 +323,10 @@
     return { meta, body: md.slice(m[0].length) };
   }
 
-  function convert(md) {
+  function convert(md, template) {
     md = String(md).replace(/^﻿/, '').replace(/\r\n?/g, '\n');
     const { meta, body } = parseFront(md);
-    const state = { title: meta.title || '', mermaid: false, warnings: [], sections: [] };
+    const state = { template, title: meta.title || '', mermaid: false, warnings: [], sections: [] };
     let html = renderBlocks(body.split('\n'), state);
     if (html.includes(TOC_MARK)) {
       const list = state.sections.map(s => `<li><a href="#${s.id}">${inline(s.text)}</a></li>`).join('');
@@ -481,6 +507,7 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
 .example pre.code{ margin:0; border-radius:0; background:#fff; padding:9px 12px; font-size:10px; }
 .example .ex-out{ padding:2px 14px 14px; }
 .example .ex-out > :first-child{ margin-top:10px; }
+.chart{ margin-top:14px; page-break-inside:avoid; break-inside:avoid; } .chart svg{ border:1px solid var(--line); border-radius:8px; }
 .pagebreak{ break-after:page; page-break-after:always; height:0; }
 .footer{ margin-top:26px; font-size:9.5px; color:var(--faint); border-top:1px solid var(--line); padding-top:7px; display:flex; justify-content:space-between; gap:16px; position:relative; }
 .footer::before{ content:""; position:absolute; top:-1px; left:0; width:40px; height:2px; background:var(--accent); }
@@ -508,7 +535,7 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
   function document_(md, opts) {
     opts = opts || {};
     const tpl = normalizeTemplate(opts.template || DEFAULT_TEMPLATE);
-    const r = convert(md);
+    const r = convert(md, tpl);
     const m = r.meta;
     const c = tpl.colors;
     // The library is inlined so the report opens offline; "<!--" and "<script" are escaped so the HTML parser keeps the block whole.
@@ -550,5 +577,5 @@ figure.fig figcaption{ font-size:10px; color:var(--muted); margin-top:4px; }
     };
   }
 
-  return { convert, document: document_, CSS, inline, DEFAULT_TEMPLATE, normalizeTemplate, templateCss };
+  return { convert, document: document_, Charts, Sheet, CSS, inline, DEFAULT_TEMPLATE, normalizeTemplate, templateCss };
 });

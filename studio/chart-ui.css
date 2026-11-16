@@ -1,0 +1,31 @@
+  .top .seg{ display:inline-flex; border:1px solid rgba(255,255,255,.35); border-radius:6px; overflow:hidden; margin-right:6px; }
+  .top .seg button{ border:0; border-radius:0; padding:5px 13px; }
+  .top .seg button.on{ background:var(--gold); color:#2b2100; font-weight:700; }
+  body[data-mode=chart] .tools, body[data-mode=chart] .main, body[data-mode=chart] .rep-only{ display:none !important; }
+  body:not([data-mode=chart]) .chartapp, body:not([data-mode=chart]) .chart-only{ display:none !important; }
+  .chartapp{ flex:1; display:grid; grid-template-columns:minmax(290px,360px) 1fr; min-height:0; }
+  .cpanel{ background:#fff; border-right:1px solid var(--line); overflow:auto; padding:14px 16px 24px; font-size:13px; }
+  .cpanel label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:12px 0 0; font-weight:600; }
+  .cpanel select, .cpanel input[type=text], .cpanel input[type=number]{ display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); text-transform:none; letter-spacing:0; font-weight:400; }
+  .cpanel .hint{ font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.45; }
+  .cpanel .drop{ border:2px dashed var(--line); border-radius:10px; padding:18px 12px; text-align:center; color:var(--muted); display:flex; flex-direction:column; gap:4px; align-items:center; }
+  .cpanel .drop b{ color:var(--blue); font-size:14px; }
+  .cpanel .drop button, .cpanel .pick{ margin-top:8px; color:var(--blue); border-color:var(--line); background:#fff; }
+  .cpanel .drop button:hover{ background:#eef3f9; }
+  .chartapp.dragging .drop{ border-color:var(--gold); background:#fff9e6; }
+  .cpanel .chk{ display:flex; gap:8px; align-items:center; margin-top:7px; font-size:13px; color:var(--ink); text-transform:none; letter-spacing:0; font-weight:400; cursor:pointer; }
+  .cpanel .chk input{ width:auto; margin:0; }
+  .cpanel .cols{ margin-top:4px; }
+  .cpanel .sw{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+  .cpanel details{ margin-top:16px; font-size:12px; }
+  .cpanel summary{ cursor:pointer; color:var(--blue); font-weight:600; }
+  .cpanel table{ border-collapse:collapse; margin-top:6px; width:100%; font-size:11.5px; }
+  .cpanel th, .cpanel td{ text-align:left; padding:3px 6px; border-bottom:1px solid #eef1f5; white-space:nowrap; max-width:130px; overflow:hidden; text-overflow:ellipsis; }
+  .cpanel th{ color:var(--muted); font-weight:600; }
+  .cview{ min-height:0; overflow:auto; background:#e9edf2; padding:20px; }
+  .cprev{ background:#fff; max-width:1100px; margin:0 auto; box-shadow:0 2px 14px rgba(2,40,81,.18); border-radius:6px; overflow:hidden; }
+  .cprev .empty{ padding:70px 30px; text-align:center; color:var(--muted); line-height:1.6; }
+  .cprev .empty b{ display:block; color:var(--blue); font-size:16px; margin-bottom:4px; }
+  .cprev .err{ padding:40px 30px; color:#b56b00; text-align:center; }
+  .cpanel [hidden]{ display:none !important; }
+  @media (max-width:780px){ .chartapp{ grid-template-columns:1fr; } .cpanel{ border-right:0; border-bottom:1px solid var(--line); max-height:50vh; } }

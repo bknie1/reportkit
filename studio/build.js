@@ -13,7 +13,12 @@ const safeJson = v => JSON.stringify(v).replace(/<(?=!--|\/?script)/gi, '\\u003c
 
 const lib = path.join(root, 'vendor/mermaid.min.js');
 const fill = {
+  '/*@@SHEET@@*/': safeJs(read('src/sheet.js')),
+  '/*@@CHARTS@@*/': safeJs(read('src/charts.js')),
   '/*@@RENDER@@*/': safeJs(read('src/render.js')),
+  '/*@@CHART_CSS@@*/': read('studio/chart-ui.css'),
+  '<!--@@CHART_HTML@@-->': read('studio/chart-ui.html'),
+  '/*@@CHART_JS@@*/': safeJs(read('studio/chart-ui.js')),
   '/*@@TPL_CSS@@*/': read('studio/template-ui.css'),
   '<!--@@TPL_HTML@@-->': read('studio/template-ui.html'),
   '/*@@TPL_JS@@*/': safeJs(read('studio/template-ui.js')),

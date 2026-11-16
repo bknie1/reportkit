@@ -1,0 +1,18 @@
+<div class="chartapp" id="chartApp">
+  <aside class="cpanel">
+    <div class="drop" id="cDrop"><b>Drop a spreadsheet here</b><span>.xlsx, .csv or .tsv. It is read on this computer and never uploaded.</span><button id="cPick">Choose file</button></div>
+    <div id="cControls" hidden>
+      <div class="hint" id="cFile"></div>
+      <label>Sheet<select id="cSheet"></select></label>
+      <label>Header row<input type="number" id="cHeader" min="1" value="1" aria-label="Header row"></label>
+      <label>Chart<select id="cType"></select></label>
+      <p class="hint" id="cHint"></p>
+      <label>Title<input type="text" id="cTitle" maxlength="120"></label>
+      <label>Subtitle<input type="text" id="cSub" maxlength="160"></label>
+      <div id="cMap"></div>
+      <details><summary>Data</summary><div id="cData"></div></details>
+    </div>
+  </aside>
+  <section class="cview"><div class="cprev" id="cPreview"></div></section>
+</div>
+<input type="file" id="cFileInput" accept=".xlsx,.xlsm,.csv,.tsv,.txt" hidden>
