@@ -2,6 +2,8 @@
 
 Drop in a spreadsheet and get a chart or a Gantt chart in your template colors, or write a report as plain markdown with a few extra marks and get a finished, styled report: a header band, progress bars, stat cards, status pills, callouts, tables and UML diagrams. It runs offline as a desktop app, a single HTML file, or a command line tool, and the whole look (palette, font, logo, images) comes from a template file you can swap, import and export.
 
+![ReportKit Studio in Chart mode: a Gantt chart drawn from a spreadsheet](docs/images/studio-chart.png)
+
 ## Quick start
 
 Open `dist/studio.html` after `npm run build`, or run the desktop app:
@@ -13,6 +15,10 @@ npm start
 
 Press **Demo** in the Studio to load a guided tour: each mark is shown as the text you write beside the result you get.
 
+The Studio edits the markdown on the left and shows the finished report on the right. Print it to PDF or download it as HTML.
+
+![ReportKit Studio in Report mode: markdown on the left, the styled report on the right](docs/images/studio-report.png)
+
 From the command line:
 
 ```bash
@@ -20,6 +26,8 @@ node src/cli.js report.md report.pdf
 node src/cli.js report.md report.html --template my-brand.rktemplate.json
 node src/cli.js --export-template my-brand.rktemplate.json
 ```
+
+PDF output needs Chrome, Edge or Chromium installed (set `REPORTKIT_BROWSER` to its path if it is not found). The desktop app prints PDFs itself.
 
 ## Charts from a spreadsheet
 
@@ -32,9 +40,51 @@ Press **Chart** in the Studio, drop in an `.xlsx`, `.csv` or `.tsv` file, and pi
 | Ranked bars | Names and one or more number columns, largest first |
 | Share of total | Names and one number column; more than six parts fold into Other |
 
+![A Gantt chart: tasks on a timeline, colored by phase, with progress, milestones and a line for today](docs/images/chart-gantt.png)
+
+Every chart type, drawn from the same sample workbooks in `examples/` (`project-plan.xlsx` and `enrollment.xlsx`), in the default template:
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/chart-column.png" alt="Column chart"><br><sub>Column chart</sub></td>
+<td width="50%"><img src="docs/images/chart-stacked.png" alt="Stacked columns"><br><sub>Stacked columns</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/chart-line.png" alt="Line chart"><br><sub>Line chart</sub></td>
+<td width="50%"><img src="docs/images/chart-ranked.png" alt="Ranked bars"><br><sub>Ranked bars</sub></td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/images/chart-share.png" alt="Share of total"><br><sub>Share of total</sub></td>
+</tr>
+</table>
+
 The Studio guesses the columns from their names and contents (dates, numbers, words like Start, End, Phase, Progress), so most sheets draw correctly on the first try. If the header is not on the first row, set **Header row**. Export with **Save SVG**, **Save PNG**, **Copy image** (paste into a slide or document) or **Save as PDF**, or press **Add to report** to place the chart in a report as a `:::chart` block that carries its own data.
 
-From the command line:
+### A chart inside a report
+
+`Add to report` writes a `:::chart` block: option lines that name the columns, then the data as CSV. The report is still one text file. This is `examples/chart-report.md`:
+
+````markdown
+:::chart gantt Release plan
+task: Task
+start: Start
+end: End
+group: Phase
+progress: Percent done
+
+Task,Phase,Start,End,Percent done
+Gather requirements,Discovery,2026-11-02,2026-11-20,100
+Design data model,Design,2026-11-23,2026-12-18,80
+Build import,Build,2027-01-11,2027-02-26,20
+Go live,Launch,2027-05-10,,
+:::
+````
+
+![A report with a Gantt chart and a column chart](docs/images/report-with-charts.png)
+
+For a column, line, area, stacked or ranked chart, name the category column with `x:` and the value columns with `y:`, for example `y: Applied, Enrolled`. A Gantt option line can also use `duration:` instead of `end:`.
+
+### From the command line
 
 ```bash
 node src/cli.js chart plan.xlsx plan.svg --task Task --start Start --end End --group Phase --title "Project plan"
@@ -42,8 +92,6 @@ node src/cli.js chart counts.xlsx counts.pdf --type bar --x Term --y "Applied,En
 ```
 
 Dates read as 2026-03-14, 3/14/2026, 14 Mar 2026 or Mar 14, 2026, or as dates in Excel. Older `.xls` and password-protected workbooks are not supported; save as `.xlsx` or CSV.
-
-PDF output needs Chrome, Edge or Chromium installed (set `REPORTKIT_BROWSER` to its path if it is not found). The desktop app prints PDFs itself.
 
 ## Markdown+
 
@@ -124,7 +172,8 @@ The build uses electron-builder. Code signing is off, so Windows SmartScreen may
 | `studio/` | Studio source; `npm run build` inlines everything into `dist/studio.html` |
 | `electron/` | Desktop shell and native PDF export |
 | `templates/` | The default template as a file |
-| `examples/` | `demo.md`, `sample.md`, and sample spreadsheets (`project-plan.xlsx`, `enrollment.xlsx`) |
+| `docs/images/` | The screenshots in this file |
+| `examples/` | `demo.md`, `sample.md`, `chart-report.md`, and sample spreadsheets (`project-plan.xlsx`, `enrollment.xlsx`) |
 | `vendor/` | Bundled Mermaid, see `NOTICE.md` |
 
 Run the tests with `npm test`.
