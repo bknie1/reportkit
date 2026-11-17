@@ -1,0 +1,26 @@
+<div class="overlay" id="pubOv" hidden>
+  <div class="sheet pubsheet" role="dialog" aria-labelledby="pubTitle" aria-modal="true">
+    <header><strong id="pubTitle">Publish to the web</strong><button id="pubClose">Close</button></header>
+    <div class="body">
+      <p class="pubnote">This puts the report on GitHub Pages as a public web page that anyone with the link can read. It uses your own GitHub account; nothing goes through ReportKit.</p>
+      <div id="pubScan" class="pubwarn" hidden></div>
+      <label>GitHub token
+        <input type="password" id="pubToken" autocomplete="off" spellcheck="false" placeholder="ghp_..." aria-describedby="pubTokenHelp">
+      </label>
+      <p class="hint" id="pubTokenHelp">Create a classic token with only the <b>public_repo</b> permission at <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=ReportKit" target="_blank" rel="noopener">github.com/settings/tokens</a>, then paste it here.</p>
+      <label class="chk" id="pubRememberRow"><input type="checkbox" id="pubRemember"> Remember the token on this computer (stored encrypted)</label>
+      <div class="pubrow">
+        <label>Repository<input type="text" id="pubRepo" maxlength="100" spellcheck="false"></label>
+        <label>Page file<input type="text" id="pubPath" maxlength="120" spellcheck="false"></label>
+      </div>
+      <p class="hint" id="pubAddr"></p>
+      <label class="chk" id="pubReplaceRow" hidden><input type="checkbox" id="pubReplace"> Replace the page that is already there</label>
+      <label class="chk"><input type="checkbox" id="pubOk"> I understand this page will be public on the internet</label>
+      <div class="pubact">
+        <button id="pubGo" class="primary" disabled>Publish</button>
+        <button id="pubDown" class="ghost">Take this page down</button>
+      </div>
+      <div id="pubMsg" class="pubmsg" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>

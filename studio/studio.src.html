@@ -41,6 +41,7 @@
 /*@@CHART_CSS@@*/
 /*@@MENU_CSS@@*/
 /*@@EDIT_CSS@@*/
+/*@@PUB_CSS@@*/
 </style>
 </head>
 <body>
@@ -59,6 +60,7 @@
   <button id="tplExport">Export</button>
   <button id="syntax" class="rep-only">Syntax guide</button>
   <button id="saveHtml" class="rep-only">Download HTML</button>
+  <button id="publish" class="rep-only">Publish</button>
   <button id="print" class="primary rep-only">Print / Save as PDF</button>
   <button id="cAdd" class="chart-only">Add to report</button>
   <button id="cSvg" class="chart-only">Save SVG</button>
@@ -76,6 +78,7 @@
 
 <!--@@TPL_HTML@@-->
 <!--@@CHART_HTML@@-->
+<!--@@PUB_HTML@@-->
 
 <div class="overlay" id="guide" hidden>
   <div class="sheet" role="dialog" aria-label="Markdown+ syntax guide">
@@ -89,6 +92,9 @@
 </script>
 <script>
 /*@@SHEET@@*/
+</script>
+<script>
+/*@@PUBLISH@@*/
 </script>
 <script>
 /*@@CHARTS@@*/
@@ -197,6 +203,9 @@ const GUIDE = [
     ['Insert toolbar', 'Click a button to insert, or drag it into the text. All components lists everything.'],
     ['Chart from a spreadsheet', 'In the Charts group: pick an Excel or CSV file, choose the columns, then Add to report.'],
   ]],
+  ['Publish', [
+    ['Publish', 'Puts the finished report on GitHub Pages as a public web page, using your own GitHub token. Choose a repository and a file name; one repository can hold many pages. Take this page down deletes the file again.'],
+  ]],
   ['Structure', [
     ['<code>## Heading</code>, <code>### Subheading</code>', 'Section label with an accent tick; primary-colored subheading.'],
     ['<code>:::defs</code> lines <code>- Term :: meaning</code>', 'Definition grid.'],
@@ -231,6 +240,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') guide.hidden
 /*@@CHART_JS@@*/
 /*@@MENU_JS@@*/
 /*@@EDIT_JS@@*/
+/*@@PUB_JS@@*/
 
 src.value = load() || SAMPLE;
 render();

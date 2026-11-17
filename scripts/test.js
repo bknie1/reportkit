@@ -218,5 +218,94 @@ const plan = [
     assert.strictEqual(bl.setFront(md, { title: '', kicker: '' }), '\n## Body\n'.replace(/^\n/, ''));
     assert.deepStrictEqual(bl.leadHeading('# Hello\n\ntext'), { text: 'Hello', line: 0 });
   });
+  // ---- publishing, against a fake GitHub ----
+  const pub = require('../src/publish');
+  const atest = async (name, fn) => { await fn(); n++; console.log('ok - ' + name); };
+  const fakeGitHub = (init) => {
+    const st = Object.assign({ login: 'Pat', token: 'tok', repos: {}, calls: [] }, init || {});
+    const f = async (url, o) => {
+      const path = url.replace('https://api.github.com', ''), m = o.method, body = o.body ? JSON.parse(o.body) : null;
+      st.calls.push(m + ' ' + path);
+      const reply = (status, data) => ({ status, json: async () => data });
+      if (o.headers.Authorization !== 'Bearer ' + st.token) return reply(401, { message: 'Bad credentials' });
+      if (path === '/user') return reply(200, { login: st.login });
+      if (path === '/user/repos' && m === 'POST') {
+        if (st.repos[body.name]) return reply(422, { message: 'name already exists' });
+        st.repos[body.name] = { private: body.private, default_branch: 'main', files: { 'README.md': { sha: 's0' } }, pages: false };
+        return reply(201, { default_branch: 'main', private: body.private });
+      }
+      let mt = path.match(/^\/repos\/([^/]+)\/([^/?]+)(\/pages|\/contents\/([^?]+))?/);
+      if (!mt) return reply(404, {});
+      const repo = st.repos[mt[2]];
+      if (!repo || mt[1] !== st.login) return reply(404, { message: 'Not Found' });
+      if (!mt[3]) return reply(200, { default_branch: repo.default_branch, private: repo.private });
+      if (mt[3] === '/pages') {
+        if (m === 'GET') return repo.pages ? reply(200, {}) : reply(404, {});
+        repo.pages = body.source; return reply(201, {});
+      }
+      const file = decodeURIComponent(mt[4]);
+      if (m === 'GET') return repo.files[file] ? reply(200, { sha: repo.files[file].sha }) : reply(404, {});
+      if (m === 'PUT') {
+        if (repo.files[file] && body.sha !== repo.files[file].sha) return reply(409, { message: 'sha mismatch' });
+        repo.files[file] = { sha: 'sha' + (st.calls.length), content: Buffer.from(body.content, 'base64').toString('utf8') };
+        return reply(201, {});
+      }
+      if (m === 'DELETE') {
+        if (body.sha !== repo.files[file].sha) return reply(409, {});
+        delete repo.files[file]; return reply(200, {});
+      }
+      return reply(404, {});
+    };
+    return { st, f };
+  };
+  await atest('publish creates the repo, writes the page and turns on Pages', async () => {
+    const g = fakeGitHub();
+    const r = await pub.publish({ token: 'tok', repo: 'my-reports', path: 'index.html', html: '<h1>Caf\u00e9 \u2713</h1>' }, g.f);
+    assert.strictEqual(r.url, 'https://pat.github.io/my-reports/');
+    assert(r.createdRepo && !r.replaced && r.pagesOn);
+    assert.strictEqual(g.st.repos['my-reports'].files['index.html'].content, '<h1>Caf\u00e9 \u2713</h1>');
+    assert.deepStrictEqual(g.st.repos['my-reports'].pages, { branch: 'main', path: '/' });
+    assert.strictEqual(g.st.repos['my-reports'].private, false);
+  });
+  await atest('publish refuses to overwrite until replace is set, then updates with the sha', async () => {
+    const g = fakeGitHub();
+    const o = { token: 'tok', repo: 'r1', path: 'q3/report.html', html: 'one' };
+    await pub.publish(o, g.f);
+    await assert.rejects(() => pub.publish(Object.assign({}, o, { html: 'two' }), g.f), e => e.code === 'exists');
+    assert.strictEqual(g.st.repos.r1.files['q3/report.html'].content, 'one');
+    const r = await pub.publish(Object.assign({}, o, { html: 'two', replace: true }), g.f);
+    assert(r.replaced && !r.createdRepo);
+    assert.strictEqual(g.st.repos.r1.files['q3/report.html'].content, 'two');
+    assert.strictEqual(r.url, 'https://pat.github.io/r1/q3/report.html');
+  });
+  await atest('a bad token, a private repo and bad names are rejected before any write', async () => {
+    const g = fakeGitHub();
+    await assert.rejects(() => pub.publish({ token: 'nope', repo: 'r', path: 'index.html', html: 'x' }, g.f), e => e.code === 'auth');
+    g.st.repos.priv = { private: true, default_branch: 'main', files: {}, pages: false };
+    await assert.rejects(() => pub.publish({ token: 'tok', repo: 'priv', path: 'index.html', html: 'x' }, g.f), e => e.code === 'private');
+    for (const bad of [{ repo: 'a b' }, { repo: '..' }, { path: '../x.html' }, { path: 'x.txt' }, { path: '.git/x.html' }]) {
+      await assert.rejects(() => pub.publish(Object.assign({ token: 'tok', repo: 'r', path: 'index.html', html: 'x' }, bad), g.f));
+    }
+    assert(!g.st.calls.some(c => c.startsWith('PUT') || c.startsWith('POST')));
+  });
+  await atest('unpublish deletes the page and keeps the repo', async () => {
+    const g = fakeGitHub();
+    await pub.publish({ token: 'tok', repo: 'r2', path: 'index.html', html: 'x' }, g.f);
+    await pub.unpublish({ token: 'tok', repo: 'r2', path: 'index.html' }, g.f);
+    assert(!g.st.repos.r2.files['index.html'] && g.st.repos.r2.files['README.md']);
+    await assert.rejects(() => pub.unpublish({ token: 'tok', repo: 'r2', path: 'index.html' }, g.f), e => e.code === 'missing');
+  });
+  test('page addresses follow GitHub Pages rules', () => {
+    assert.strictEqual(pub.pageUrl('Pat', 'pat.github.io', 'index.html'), 'https://pat.github.io/');
+    assert.strictEqual(pub.pageUrl('Pat', 'pat.github.io', 'a.html'), 'https://pat.github.io/a.html');
+    assert.strictEqual(pub.pageUrl('Pat', 'site', 'docs/index.html'), 'https://pat.github.io/site/docs/');
+    assert.strictEqual(pub.slugify('Q3 Report: Final!'), 'q3-report-final');
+  });
+  test('the scan flags emails, nine-digit IDs and SSNs in visible text only', () => {
+    const s = pub.scan('<p>Write to a@b.edu</p><p>ID 912345678</p><p>123-45-6789</p><style>.x{width:123456789px}</style><script>var a=912345678</script><p>1,234,567,890 and 2026-11-16</p>');
+    assert.deepStrictEqual(s.map(x => x.kind + ':' + x.count).sort(), ['email:1', 'id:1', 'ssn:1']);
+    assert.deepStrictEqual(pub.scan('<p>Enrollment rose 12% to 4,512.</p>'), []);
+    assert.deepStrictEqual(pub.scan('<p>Student 912345678.</p><p>ID (912345678), then 3.123456789 and 1,234,567,890</p>').map(x => x.kind + ':' + x.count), ['id:2']);
+  });
   console.log(n + ' passed');
 })().catch(e => { console.error(e); process.exit(1); });

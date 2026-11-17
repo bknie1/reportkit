@@ -1,0 +1,22 @@
+  .pubsheet{ width:min(560px,94vw); }
+  .pubsheet label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:12px 0 0; font-weight:600; }
+  .pubsheet input[type=text], .pubsheet input[type=password]{ display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); text-transform:none; letter-spacing:0; font-weight:400; }
+  .pubsheet .chk{ display:flex; gap:8px; align-items:center; margin-top:10px; font-size:13px; color:var(--ink); text-transform:none; letter-spacing:0; font-weight:400; cursor:pointer; }
+  .pubsheet .chk input{ width:auto; margin:0; }
+  .pubsheet .hint{ font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.45; overflow-wrap:anywhere; }
+  .pubsheet .pubnote{ margin:0 0 4px; }
+  .pubsheet .pubrow{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .pubsheet .pubact{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .pubsheet button{ color:var(--blue); border-color:var(--line); background:#fff; padding:7px 14px; }
+  .pubsheet button:hover{ background:#eef3f9; }
+  .pubsheet button.primary{ background:var(--gold); color:#2b2100; border-color:var(--gold); }
+  .pubsheet button.primary:hover{ background:#ffcf33; }
+  .pubsheet button:disabled{ opacity:.5; cursor:not-allowed; }
+  .pubsheet header button{ color:#fff; border-color:rgba(255,255,255,.35); background:transparent; padding:5px 11px; }
+  .pubsheet .pubwarn{ background:#fff6e0; border:1px solid #f0c75e; color:#6b4a00; border-radius:8px; padding:9px 12px; margin:10px 0 0; font-size:12.5px; line-height:1.45; }
+  .pubsheet .pubmsg{ margin-top:12px; font-size:13px; line-height:1.5; }
+  .pubsheet .pubmsg.err{ color:#a12a2a; }
+  .pubsheet .pubmsg.ok{ color:#17603a; }
+  .pubsheet .pubmsg a{ color:var(--blue); font-weight:600; word-break:break-all; }
+  .pubsheet [hidden]{ display:none !important; }
+  @media (max-width:520px){ .pubsheet .pubrow{ grid-template-columns:1fr; } }

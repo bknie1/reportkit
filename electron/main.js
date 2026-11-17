@@ -1,5 +1,5 @@
 // ReportKit desktop shell: opens the Studio in a window and exports PDFs without needing a browser installed.
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -44,6 +44,22 @@ ipcMain.handle('export-pdf', async (event, html, name) => {
     return { ok: false, error: String(err && err.message || err) };
   }
 });
+
+// The GitHub token for publishing is kept encrypted with the operating system's key store.
+// If that store is unavailable nothing is saved, so the token is never written in plain text.
+const tokenFile = () => path.join(app.getPath('userData'), 'github-token.bin');
+ipcMain.handle('token-load', () => {
+  try {
+    if (!safeStorage.isEncryptionAvailable() || !fs.existsSync(tokenFile())) return '';
+    return safeStorage.decryptString(fs.readFileSync(tokenFile()));
+  } catch (e) { return ''; }
+});
+ipcMain.handle('token-save', (event, t) => {
+  if (typeof t !== 'string' || !t || t.length > 500 || !safeStorage.isEncryptionAvailable()) return false;
+  fs.writeFileSync(tokenFile(), safeStorage.encryptString(t));
+  return true;
+});
+ipcMain.handle('token-clear', () => { try { fs.unlinkSync(tokenFile()); } catch (e) {} return true; });
 
 app.whenReady().then(async () => {
   // Smoke test: REPORTKIT_SELFTEST=<out.pdf> renders a one-line report to PDF and exits.

@@ -55,6 +55,18 @@ node src/cli.js --export-template my-brand.rktemplate.json
 
 PDF output needs Chrome, Edge or Chromium installed (set `REPORTKIT_BROWSER` to its path if it is not found). The desktop app prints PDFs itself.
 
+### Publish to the web
+
+**Publish** puts the report on GitHub Pages as a public web page, using your own GitHub account. Nothing goes through a ReportKit server, and there is no ReportKit account.
+
+![The Publish dialog: token, repository, page file and a public-web confirmation](docs/images/studio-publish.png)
+
+1. Create a classic token with only the `public_repo` permission at github.com/settings/tokens and paste it in. The desktop app can remember it, encrypted with the operating system's key store; the browser version never stores it.
+2. Pick a repository name (it is created if it does not exist) and a page file name. One repository can hold many pages, one per file name.
+3. Tick that you understand the page will be public, and press **Publish**. The link appears when it is done; GitHub can take a minute to start serving a new page.
+
+Publishing again to the same file asks you to tick **Replace**. **Take this page down** deletes the file from the repository. Before you publish, the report is checked for email addresses, nine-digit numbers (student or employee IDs) and Social Security-shaped numbers, and warned about if any are found. GitHub Pages on a free account is public only, so do not publish anything private.
+
 ## Charts from a spreadsheet
 
 Press **Chart** in the Studio, drop in an `.xlsx`, `.csv` or `.tsv` file, and pick the columns. The file is read on your computer; nothing is uploaded. The chart is drawn in the active template's colors, so a template change restyles it.
@@ -194,6 +206,7 @@ The build uses electron-builder. Code signing is off, so Windows SmartScreen may
 |---|---|
 | `src/render.js` | The renderer and template rules. Pure, runs in node and the browser |
 | `src/sheet.js`, `src/charts.js` | Spreadsheet reader (.xlsx and CSV, no dependencies) and the SVG chart drawer |
+| `src/publish.js` | Publishing to GitHub Pages through the REST API, with the fetch call injectable so it is tested against a fake GitHub |
 | `src/cli.js`, `src/pdf.js` | Command line and PDF through an installed browser |
 | `studio/` | Studio source (the component menu is `components.js` and `menu-ui.js`; editing in the preview is `blocks.js` and `preview-edit.js`); `npm run build` inlines everything into `dist/studio.html` |
 | `electron/` | Desktop shell and native PDF export |
